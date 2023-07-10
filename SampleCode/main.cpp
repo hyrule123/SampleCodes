@@ -1,63 +1,38 @@
-
-#include <filesystem>
-#include <type_traits>
 #include <string>
-#include <fstream>
 #include <Windows.h>
 
-
-namespace stdfs = std::filesystem;
-
-template <typename T>
-class CCodeWriter
+// Convert a wide Unicode string to an UTF8 string
+std::string utf8_encode(const std::wstring& wstr)
 {
-public:
-	CCodeWriter() {};
-	~CCodeWriter() {};
+	int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+	std::string strTo(size_needed, 0);
+	WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+	return strTo;
+}
 
-private:
-
-	//SFINAE overload to char type
-	template <typename U = T, typename std::enable_if_t<std::is_same_v<U, wchar_t>, int> = 0>
-	const std::basic_string_view<U> ConvString(const std::string_view _AstrView, const std::wstring_view _WstrView)
-	{
-		return _WstrView;
-	}
-	
-	//SFINAE overload to wchar_t type
-	template <typename U = T, typename std::enable_if_t<std::is_same_v<U, char>, int> = 0>
-	const std::basic_string_view<U> ConvString(const std::string_view _AstrView, const std::wstring_view _WstrView)
-	{
-		return _AstrView;
-	}
-
-#define CONV_STRING(str) ConvString(str, L##str)
-
-
-private:
-	int m_iIndentation;
-	std::basic_ofstream<T> m_ofs;
-
-public:
-	HRESULT Open(stdfs::path const& _path) { return S_OK; }
-	bool IsOpen() const { return m_ofs.is_open(); }
-
-	void WriteCode(const std::basic_string_view<T> _strCode)
-	{
-		//...
-
-		std::string_view newstrv = CONV_STRING("\t");
-
-		//...
-	}
-};
-
-
-int main()
+// Convert an UTF8 string to a wide Unicode String
+std::wstring utf8_decode(const std::string& str)
 {
-	CCodeWriter<char> writer;
+	int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+	std::wstring wstrTo(size_needed, 0);
+	MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+	return wstrTo;
+}
 
-	writer.WriteCode("HI");
+// Convert an wide Unicode string to ANSI string
+std::string unicode2ansi(const std::wstring& wstr)
+{
+	int size_needed = WideCharToMultiByte(CP_ACP, 0, &wstr[0], -1, NULL, 0, NULL, NULL);
+	std::string strTo(size_needed, 0);
+	WideCharToMultiByte(CP_ACP, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+	return strTo;
+}
 
-	return 0;
+// Convert an ANSI string to a wide Unicode String
+std::wstring ansi2unicode(const std::string& str)
+{
+	int size_needed = MultiByteToWideChar(CP_ACP, 0, &str[0], (int)str.size(), NULL, 0);
+	std::wstring wstrTo(size_needed, 0);
+	MultiByteToWideChar(CP_ACP, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+	return wstrTo;
 }
