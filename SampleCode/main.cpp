@@ -1,60 +1,55 @@
+#include <memory>
+#include <type_traits>
 #include <iostream>
-#include <typeinfo>
-#include <typeindex>
 
-#include "json-cpp/json.h"
-
-struct Vector3
+namespace std
 {
-    float V[3];
-    Vector3() : V{} {}
-    Vector3(float _x, float _y, float _z) : V{ _x, _y, _z } {}
-};
+    template <class T> struct is_shared_ptr : std::false_type {};
+    template <class T> struct is_shared_ptr<std::shared_ptr<T>> : std::true_type {};
+    template <class T> inline constexpr bool is_shared_ptr_v = is_shared_ptr<T>::value;
 
-struct Matrix
-{
-    float M[16];
-};
+    template <class T> struct is_unique_ptr : std::false_type {};
+    template <class T> struct is_unique_ptr<std::unique_ptr<T>> : std::true_type {};
+    template <class T> inline constexpr bool is_unique_ptr_v = is_unique_ptr<T>::value;
+
+    template <class T> struct is_smart_ptr : std::false_type {};
+    template <class T> struct is_smart_ptr<std::shared_ptr<T>> : std::true_type {};
+    template <class T> struct is_smart_ptr<std::unique_ptr<T>> : std::true_type {};
+    template <class T> inline constexpr bool is_smart_ptr_v = is_smart_ptr<T>::value;
+}
+
 
 int main() 
 {
+    std::shared_ptr<int> pInt = std::make_shared<int>();
+    int* ptr = new int;
+
+    if (std::is_shared_ptr_v<std::shared_ptr<int>>)
     {
-        Vector3 TestVec = Vector3(1.f, 2.f, 3.f);
-
-        std::string Vec2Str((const char*)&TestVec, sizeof(TestVec));
-
-        Json::Value jVal;
-        jVal["Test"] = Vec2Str;
-
-        std::string Str2Vec = jVal["Test"].asString();
-        Vector3 ReturnVec{};
-        memcpy(&ReturnVec, Str2Vec.data(), sizeof(Vector3));
+        std::cout << "This is shared pointer!!" << std::endl;
     }
 
+    std::cout << "int* type is ";
+    if (std::is_shared_ptr_v<int*>)
     {
-        Matrix TestMat{};
-        for (int i = 0; i < 16; ++i)
-        {
-            TestMat.M[i] = (float)i;
-        }
-
-        std::string Mat2Str((const char*)&TestMat, sizeof(TestMat));
-
-        Json::Value jVal;
-        jVal["Test"] = Mat2Str;
-
-        std::string Str2Mat = jVal["Test"].as<std::string>();
-        Matrix ReturnVec{};
-        memcpy(&ReturnVec, Str2Mat.data(), sizeof(Matrix));
-
-
-        size_t MatSize = sizeof(Matrix);
-        size_t MatToStrSize = Str2Mat.size();
-
-        int a = 0;
+        std::cout << "shared pointer !!" << std::endl;
+    }
+    else
+    {
+        std::cout << "not shared pointer !!" << std::endl;
+    }
+   
+    std::cout << "std::unique_ptr<float*> is ";
+    if(std::is_smart_ptr_v<std::unique_ptr<float*>>)
+    {
+        std::cout << "smart pointer !!" << std::endl;
+    }
+    else
+    {
+        std::cout << "not smart pointer !!" << std::endl;
     }
 
 
-
+    delete ptr;
     return 0;
 }
