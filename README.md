@@ -2,7 +2,6 @@
 
 유용하게 써먹을 수 있는 짧은 샘플 코드 저장소
 
-* 참고 사이트 *
-* https://stackoverflow.com/questions/76589651/sfinae-function-that-returns-proper-character-encoding-depending-on-template-typ
-
-SFINAE 오버로드와 매크로를 활용하여 템플릿의 문자 인코딩에 따라 다른 문자를 반환하는 코드
+Type Tag / Type ID Pattern
+- 인스턴스 별로 고유한 타입 ID를 부여해줄 수 있는 간단한 함수
+- 동일한 타입의 템플릿 함수는 한번만 만들어지고, 만약 새로운 타입의 템플릿 함수가 만들어졌다면 static 변수가 최초 한번 동작한다는데서 착안해서 만들어진 패턴
