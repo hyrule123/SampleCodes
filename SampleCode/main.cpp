@@ -1,26 +1,71 @@
-﻿#include <string>
-#include <assert.h>
+﻿#include <type_traits>
+#include <vector>
+#include <memory>
 
-inline void AssertW(const wchar_t* _expression, const wchar_t* _message, const wchar_t* _fileName, unsigned int _line)
+enum class eComponentCategory
 {
-	std::wstring assertMsg = std::wstring(_expression) + std::wstring(L"\n") + std::wstring(_message);
-	_wassert(assertMsg.c_str(), _fileName, _line);
-}
+    foo,
+    bar
+};
 
-#define ASSERT(_expression, _message) (void) (					\
-	(!!(_expression)) || \
-	(AssertW(L ## #_expression, L ## _message, _CRT_WIDE(__FILE__), (unsigned)(__LINE__)), 0) \
-)
 
-#ifdef _DEBUG
-#define ASSERT_DEBUG(_expression, _message) ASSERT(_expression, _message)
-#else
-#define ASSERT_DEBUG(_expression, _message)
-#endif _DEBUG
-
-int main(void)
+//class for type classification
+template <class BaseComponentType, eComponentCategory _category>
+class Component
 {
-	ASSERT(1 == 0, "1은 0이 아닙니다");
+public:
+    Component() {};
+    virtual ~Component() {};
 
-	return 0;
+    static constexpr eComponentCategory category = _category;
+
+    template <class CompareType>
+    static constexpr bool IsBaseComponentType()
+    {
+        return std::is_same_v<BaseComponentType, CompareType>;
+    }
+};
+
+class FooComponent
+    : public Component<FooComponent, eComponentCategory::foo>
+{
+public:
+    FooComponent() {}
+    virtual ~FooComponent() {}
+};
+
+
+class ComponentHolder
+{
+public:
+    ComponentHolder() {};
+    virtual ~ComponentHolder() {};
+
+    template <class ComponentType>
+    ComponentType* GetComponent()
+    {
+        ComponentType* retCom = nullptr;
+
+        //type check
+        //if constexpr (ComponentType::IsBaseComponentType<ComponentType>())
+//compile time error  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if constexpr (ComponentType::template IsBaseComponentType<ComponentType>())
+        {
+            //do Something
+        }
+
+        return retCom;
+    }
+
+};
+
+
+int main()
+{
+    ComponentHolder holder{};
+
+    holder.GetComponent<FooComponent>();
+
+
+    return 0;
 }
