@@ -1,27 +1,71 @@
-﻿#include <filesystem>
-#include <iostream>
+﻿#include <type_traits>
+#include <vector>
+#include <memory>
 
-namespace std
+enum class eComponentCategory
 {
-	namespace fs = filesystem;
-}
+    foo,
+    bar
+};
+
+
+//class for type classification
+template <class BaseComponentType, eComponentCategory _category>
+class Component
+{
+public:
+    Component() {};
+    virtual ~Component() {};
+
+    static constexpr eComponentCategory category = _category;
+
+    template <class CompareType>
+    static constexpr bool IsBaseComponentType()
+    {
+        return std::is_same_v<BaseComponentType, CompareType>;
+    }
+};
+
+class FooComponent
+    : public Component<FooComponent, eComponentCategory::foo>
+{
+public:
+    FooComponent() {}
+    virtual ~FooComponent() {}
+};
+
+
+class ComponentHolder
+{
+public:
+    ComponentHolder() {};
+    virtual ~ComponentHolder() {};
+
+    template <class ComponentType>
+    ComponentType* GetComponent()
+    {
+        ComponentType* retCom = nullptr;
+
+        //type check
+        //if constexpr (ComponentType::IsBaseComponentType<ComponentType>())
+//compile time error  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        if constexpr (ComponentType::template IsBaseComponentType<ComponentType>())
+        {
+            //do Something
+        }
+
+        return retCom;
+    }
+
+};
+
 
 int main()
 {
-	std::fs::path add;
-	add /= "x64";
-	std::fs::current_path(add);
-	
-	std::string newpath = std::fs::current_path().string();
-	std::cout << newpath << std::endl;
+    ComponentHolder holder{};
 
-	std::fs::path relPath = ".";
-	std::fs::path absPath = std::fs::absolute(relPath);
-	std::cout << absPath.string() << std::endl;
-
-	bool b = std::filesystem::exists("asdf/asdfasdf/");
+    holder.GetComponent<FooComponent>();
 
 
-
-	return 0;
+    return 0;
 }
