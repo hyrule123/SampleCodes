@@ -1,71 +1,28 @@
-﻿#include <type_traits>
-#include <vector>
-#include <memory>
+﻿#include <string>
 
-enum class eComponentCategory
-{
-    foo,
-    bar
-};
-
-
-//class for type classification
-template <class BaseComponentType, eComponentCategory _category>
-class Component
+class test
+	: public std::string
 {
 public:
-    Component() {};
-    virtual ~Component() {};
+	//inherit constructor from std::string
+	using std::string::string;
 
-    static constexpr eComponentCategory category = _category;
+	~test() {};
 
-    template <class CompareType>
-    static constexpr bool IsBaseComponentType()
-    {
-        return std::is_same_v<BaseComponentType, CompareType>;
-    }
-};
-
-class FooComponent
-    : public Component<FooComponent, eComponentCategory::foo>
-{
-public:
-    FooComponent() {}
-    virtual ~FooComponent() {}
-};
-
-
-class ComponentHolder
-{
-public:
-    ComponentHolder() {};
-    virtual ~ComponentHolder() {};
-
-    template <class ComponentType>
-    ComponentType* GetComponent()
-    {
-        ComponentType* retCom = nullptr;
-
-        //type check
-        //if constexpr (ComponentType::IsBaseComponentType<ComponentType>())
-//compile time error  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        if constexpr (ComponentType::template IsBaseComponentType<ComponentType>())
-        {
-            //do Something
-        }
-
-        return retCom;
-    }
-
+	std::string DoSomeJob();
 };
 
 
 int main()
 {
-    ComponentHolder holder{};
+	test tst = "hello";
 
-    holder.GetComponent<FooComponent>();
+	tst.DoSomeJob();
 
+	return 0;
+}
 
-    return 0;
+std::string test::DoSomeJob()
+{
+	return std::string(this->c_str());
 }
