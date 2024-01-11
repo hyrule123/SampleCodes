@@ -1,28 +1,56 @@
-﻿#include <string>
+﻿#include "Serializer.h"
 
-class test
-	: public std::string
+#include <vector>
+#include <string>
+
+class TestClass : public Serializable
 {
 public:
-	//inherit constructor from std::string
-	using std::string::string;
+	TestClass() {}
+	~TestClass() {}
 
-	~test() {};
+	bool Read() override { return true; }
+	bool Write() override { return true; }
 
-	std::string DoSomeJob();
+	std::string GetStrKey() { return "HI"; }
 };
 
+class Independent
+{
+	Independent() {};
+	~Independent() {};
+};
 
 int main()
 {
-	test tst = "hello";
+	int a = 3;
+	int b = 10324;
 
-	tst.DoSomeJob();
+	std::vector<float> vecflt = { 1.f, 2.f, 3.f };
 
+	BinarySerializer ser;
+	ser << a << b;
+	ser << vecflt;
+
+	std::string str = "test";
+	ser << str;
+	std::wstring wstr = L"testwstr";
+	ser << wstr;
+
+	std::vector<std::string> vecstr = { "1", "2", "3" };
+	ser << vecstr;
+	
+	ser >> b >> a;
+	vecflt.clear();
+	str.clear();
+	wstr.clear();
+	ser >> vecflt;
+	ser >> str;
+	ser >> wstr;
+
+	vecstr.clear();
+	ser >> vecstr;
+
+	
 	return 0;
-}
-
-std::string test::DoSomeJob()
-{
-	return std::string(this->c_str());
 }
