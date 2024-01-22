@@ -721,6 +721,11 @@ namespace Json {
     class JSON_API Value {
         friend class ValueIteratorBase;
 
+        friend void operator<<(float& _f, const Value& val)
+        {
+            _f = val.asFloat();
+        }
+
     public:
         using Members = std::vector<String>;
         using iterator = ValueIterator;

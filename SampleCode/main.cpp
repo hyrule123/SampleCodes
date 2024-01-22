@@ -32,9 +32,9 @@ int main()
 	str += wrap;
 	
 	Json::Value j = 3.f;
-	float flt;
 
-
+	float flt = 0.f;
+	flt << j;
 	
 	return 0;
 }
