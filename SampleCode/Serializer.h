@@ -8,7 +8,7 @@
 #include <concepts>
 #include <string>
 
-
+template <typename T>
 class Serializable
 {
 public:

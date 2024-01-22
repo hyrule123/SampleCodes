@@ -3,9 +3,14 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Serializer.cpp" />
+    <ClCompile Include="json.cpp" />
+    <ClCompile Include="base64.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Serializer.h" />
     <ClInclude Include="type_traits_Ex.h" />
+    <ClInclude Include="json-forwards.h" />
+    <ClInclude Include="json.h" />
+    <ClInclude Include="base64.h" />
   </ItemGroup>
 </Project>

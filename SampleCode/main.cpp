@@ -1,55 +1,39 @@
 ﻿#include "Serializer.h"
+#include "json.h"
+#include "base64.h"
 
 #include <vector>
 #include <string>
+#include <filesystem>
+#include <fstream>
 
-class TestClass : public Serializable
+
+
+class StringWrapper
 {
 public:
-	TestClass() {}
-	~TestClass() {}
+	StringWrapper() {}
+	StringWrapper(const std::string& _str) : m_str(_str) {}
+	StringWrapper(const std::string_view _str) : m_str(_str) {}
+	
+	~StringWrapper() {}
+	operator std::string&() { return m_str; }
+	operator const std::string& () const { return m_str; }
 
-	bool Read() override { return true; }
-	bool Write() override { return true; }
-
-	std::string GetStrKey() { return "HI"; }
+private:
+	std::string m_str;
 };
 
-class Independent
-{
-	Independent() {};
-	~Independent() {};
-};
 
 int main()
 {
-	int a = 3;
-	int b = 10324;
-
-	std::vector<float> vecflt = { 1.f, 2.f, 3.f };
-
-	BinarySerializer ser;
-	ser << a << b;
-	ser << vecflt;
-
-	std::string str = "test";
-	ser << str;
-	std::wstring wstr = L"testwstr";
-	ser << wstr;
-
-	std::vector<std::string> vecstr = { "1", "2", "3" };
-	ser << vecstr;
+	std::string str = "HI";
+	StringWrapper wrap = str;
+	str += wrap;
 	
-	ser >> b >> a;
-	vecflt.clear();
-	str.clear();
-	wstr.clear();
-	ser >> vecflt;
-	ser >> str;
-	ser >> wstr;
+	Json::Value j = 3.f;
+	float flt;
 
-	vecstr.clear();
-	ser >> vecstr;
 
 	
 	return 0;
