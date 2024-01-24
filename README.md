@@ -2,8 +2,6 @@
 
 유용하게 써먹을 수 있는 짧은 샘플 코드 저장소
 
-<사용법>
-- 입력: JSONSerializer["INDEX"] << 3;
-- 출력: int a; JSONSerialzer["INDEX"] >> 3;
-
-- 커스텀 데이터의 경우 (De)SerializeBase64 함수를 명시적으로 호출해서 넣어줘야함.
+C++ 20 Concept을 사용한 PointerTypes/NotPointerTypes 설정
+- 일반 포인터 형태와 스마트 포인터 형태 타입인지를 확인 가능하다.
+- 방법: *p 연산자 유무, std::nullptr_t 타입과 비교가 가능한지 여부

@@ -5,10 +5,27 @@
 #include <filesystem>
 #include <fstream>
 
+template <typename P, typename T>
+concept points_to = 
+requires(P p)
+{
+	{ *p } -> std::common_reference_with<T&>;
+} &&
+std::equality_comparable_with<std::nullptr_t, P>;
+
+template <typename P>
+concept PointerType = requires(P p) { { *p }; } &&
+std::equality_comparable_with<std::nullptr_t, P>;
+
 void JsonPrecisionCheck();
 
 int main()
 {
+	
+	constexpr bool pt = points_to<int*, int>;
+	constexpr bool ispt = PointerType<std::shared_ptr<int>&>;
+	constexpr bool ispt2 = NotPointerTypes<int*>;
+
 	//JsonPrecisionCheck();
 
 	{
@@ -25,6 +42,24 @@ int main()
 		ser["DOUBLE"] << 4.0;
 		double d{};
 		ser["DOUBLE"] >> d;
+
+		int* pInt{};
+		//이건 에러가 발생해야함
+		//ser["POINTERNOTSUPPORT"] << pInt;
+
+		std::shared_ptr<int> pSharedInt{};
+		//ser["SHAREDPOINTERSUPPORT"] << pSharedInt;
+
+		ser["INT_RVALUE"] << 3;
+
+		//struct testStruct
+		//{
+		//	int a;
+		//	float b;
+		//} teStruct;
+		//ser["TESTSTRUCT"] << teStruct;
+
+		ser["JVAL"] << Json::Value();
 	}
 
 	

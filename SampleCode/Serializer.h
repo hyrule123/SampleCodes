@@ -18,10 +18,12 @@
 	template <typename T>
 	using Remove_Const_Reference_t = Remove_Const_Reference<T>::type;
 
-	template <typename T>
-	concept PointerTypes = requires(T a) { *a; };
-	template <typename T>
-	concept NotPointerTypes = !requires(T a) { *a; };
+	template <typename P>
+	concept PointerTypes = requires(P p) { { *p }; }&&
+		std::equality_comparable_with<std::nullptr_t, P>;
+
+	template <typename P>
+	concept NotPointerTypes = !PointerTypes<P>;
 
 	template <typename T>
 	concept AllowedTypes =
