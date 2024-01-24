@@ -2,196 +2,96 @@
 
 #include "type_traits_Ex.h"
 
+#include <filesystem>
 #include <iostream>
 #include <cstdint>
 #include <vector>
 #include <concepts>
 #include <string>
 
-template <typename T>
-class Serializable
-{
-public:
-	virtual bool Write() = 0;
-	virtual bool Read() = 0;
-};
-
-
-template <typename T>
-concept ValueTypes =
-std::is_fundamental_v<T>;
-
-template <typename T>
-concept StringTypes =
-std::is_same_v<T, std::string> ||
-std::is_same_v<T, std::wstring>;
-
-template <typename T>
-concept PointerTypes = requires(T a)
-{
-	a->GetStrKey();
-};
-
-
-
-class BinarySerializer
-{
-public:
-	BinarySerializer();
-	~BinarySerializer();
-
-	void Write(const unsigned char* _pSrc, size_t _size);
-	size_t Read(unsigned char* _pDest, size_t _size);
-	
-	template <ValueTypes T>
-	BinarySerializer& operator<<(const T& _data);
-	template <StringTypes T>
-	BinarySerializer& operator<<(const T& _data);
 
 	template <typename T>
-	BinarySerializer& operator<<(const std::vector<T>& _data);
-
-	template <ValueTypes T>
-	BinarySerializer& operator>>(T& _data);
-	template <StringTypes T>
-	BinarySerializer& operator>>(T& _data);
+	struct Remove_Const_Reference
+	{
+		using type = std::remove_const_t<std::remove_reference_t<T>>;
+	};
+	template <typename T>
+	using Remove_Const_Reference_t = Remove_Const_Reference<T>::type;
 
 	template <typename T>
-	BinarySerializer& operator>>(std::vector<T>& _data);
+	concept PointerTypes = requires(T a) { *a; };
+	template <typename T>
+	concept NotPointerTypes = !requires(T a) { *a; };
 
-	
-	size_t GetDataSize() const { return m_data.size(); }
-	void ReserveDataSize(size_t _size) { m_data.reserve(_size); }
+	template <typename T>
+	concept AllowedTypes =
+		//* 연산자가 있을경우(포인터일경우) 저장 불가
+		!PointerTypes<T> &&
+		//string이 아니여야 함
+		!(std::is_same_v<Remove_Const_Reference_t<T>, std::string> ||
+			std::is_same_v<Remove_Const_Reference_t<T>, std::wstring>);
 
-	size_t GetReadOffset() const { return m_ReadOffset; }
-	inline size_t SetReadOffset(size_t _offset);
-
-	size_t GetWriteOffset() const { return m_WriteOffset; }
-	inline size_t SetWriteOffsert(size_t _offset);
-	
-	void Clear() { m_data.clear(); m_ReadOffset = (size_t)0; m_WriteOffset = (size_t)0; }
-private:
-	std::vector<unsigned char> m_data;
-	size_t m_ReadOffset;
-	size_t m_WriteOffset;
-};
+	template <typename T>
+	concept StringTypes =
+		std::is_same_v<T, std::string> ||
+		std::is_same_v<T, std::wstring>;
 
 
-template<ValueTypes T>
-inline BinarySerializer& BinarySerializer::operator<<(const T& _data)
-{
-	BinarySerializer& thisRef = *this;
-
-	Write(reinterpret_cast<const unsigned char*>(&_data), sizeof(T));
-
-	return thisRef;
-}
-
-template<StringTypes T>
-inline BinarySerializer& BinarySerializer::operator<<(const T& _data)
-{
-	BinarySerializer& thisRef = *this;
-
-	const unsigned char* src = reinterpret_cast<const unsigned char*>(_data.data());
-	size_t BytesToRead = sizeof(T::value_type) * _data.size();
-	
-	thisRef << BytesToRead;
-	Write(src, BytesToRead);
-
-	return thisRef;
-}
-
-template<typename T>
-inline BinarySerializer& BinarySerializer::operator<<(const std::vector<T>& _data)
-{
-	BinarySerializer& thisRef = *this;
-
-	(*this) << _data.size();
-	for (size_t i = 0; i < _data.size(); ++i)
+	class Serializer
 	{
-		thisRef << _data[i];
+	protected:
+		Serializer() {};
+		virtual ~Serializer() {};
+	public:
+		virtual bool SaveFile(std::filesystem::path const& _fullPath) = 0;
+		virtual bool LoadFile(std::filesystem::path const& _fullPath) = 0;
+	};
+
+
+	//다중상속 용도
+	template <typename T> requires std::is_base_of_v<Serializer, T>
+	class Serializable
+	{
+	protected:
+		Serializable() {};
+		virtual ~Serializable() {};
+
+	public:
+		inline bool SaveFile(std::filesystem::path const& _fullPath);
+		inline bool LoadFile(std::filesystem::path const& _fullPath);
+
+		virtual bool Serialize(T& _ser) = 0;
+		virtual bool DeSerialize(T& _ser) = 0;
+	};
+
+
+	template<typename T> requires std::is_base_of_v<Serializer, T>
+	inline bool Serializable<T>::SaveFile(std::filesystem::path const& _fullPath)
+	{
+		T ser{};
+
+		bool result = Serialize(&ser);
+		if (eResultFail(result))
+		{
+			return false;
+		}
+
+		return ser.SaveFile(_fullPath);
 	}
 
-	//Write(&_data, sizeof(T));
-
-	return thisRef;
-}
-
-
-
-template<ValueTypes T>
-inline BinarySerializer& BinarySerializer::operator>>(T& _data)
-{
-	BinarySerializer& thisRef = *this;
-
-	Read(reinterpret_cast<unsigned char*>(&_data), sizeof(T));
-
-	return thisRef;
-}
-
-template<StringTypes T>
-inline BinarySerializer& BinarySerializer::operator>>(T& _data)
-{
-	BinarySerializer& thisRef = *this;
-
-	size_t BytesToRead{};
-	thisRef >> BytesToRead;
-	_data.clear();
-	_data.resize(BytesToRead);
-
-	unsigned char* dest = reinterpret_cast<unsigned char*>(_data.data());
-	Read(dest, BytesToRead);
-
-	return thisRef;
-}
-
-template<typename T>
-inline BinarySerializer& BinarySerializer::operator>>(std::vector<T>& _data)
-{
-	BinarySerializer& thisRef = *this;
-
-	size_t size = 0;
-	thisRef >> size;
-	_data.resize(size);
-	for (size_t i = 0; i < _data.size(); ++i)
+	template<typename T> requires std::is_base_of_v<Serializer, T>
+	inline bool Serializable<T>::LoadFile(std::filesystem::path const& _fullPath)
 	{
-		thisRef >> _data[i];
+		T ser{};
+		bool result = ser.LoadFile(_fullPath);
+
+		if (eResultFail(result))
+		{
+			return false;
+		}
+
+		return ser.DeSerialize();
 	}
 
-	return thisRef;
-}
 
 
-inline size_t BinarySerializer::SetReadOffset(size_t _offset)
-{
-	size_t ret = _offset;
-
-	if (m_data.size() <= ret)
-	{
-		ret = m_data.size();
-	}
-	m_ReadOffset = ret;
-
-	return ret;
-}
-
-inline size_t BinarySerializer::SetWriteOffsert(size_t _offset)
-{
-	size_t ret = _offset;
-
-	if (m_data.size() <= ret)
-	{
-		ret = m_data.size();
-	}
-	m_WriteOffset = ret;
-
-	return ret;
-}
-
-//#include "../json-cpp/json-forwards.h"
-//class JsonSerializer
-//{
-//
-//
-//
-//};

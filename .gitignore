@@ -39,3 +39,5 @@ x64/
 Debug/
 Release/
 
+# JSON files
+SampleCode/*.json

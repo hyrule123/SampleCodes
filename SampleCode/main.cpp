@@ -1,6 +1,4 @@
-﻿
-#include "json.h"
-#include "base64.h"
+﻿#include "JsonSerializer.h"
 
 #include <vector>
 #include <string>
@@ -11,25 +9,23 @@ void JsonPrecisionCheck();
 
 int main()
 {
-	JsonPrecisionCheck();
+	//JsonPrecisionCheck();
 
+	{
+		JsonSerializer ser;
+		ser["INT"] << 3;
 
+		int i = 0;
+		ser["INT"] >> i;
 
-	//{
-	//	JsonSerializer ser;
-	//	ser["INT"] << 3;
+		ser["FLOAT"] << 3.f;
+		float f{};
+		ser["FLOAT"] >> f;
 
-	//	int i = 0;
-	//	ser["INT"] >> i;
-
-	//	ser["FLOAT"] << 3.f;
-	//	float f{};
-	//	ser["FLOAT"] >> f;
-
-	//	ser["DOUBLE"] << 4.0;
-	//	double d{};
-	//	ser["DOUBLE"] >> d;
-	//}
+		ser["DOUBLE"] << 4.0;
+		double d{};
+		ser["DOUBLE"] >> d;
+	}
 
 	
 	return 0;

@@ -3,10 +3,17 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="json.cpp" />
+    <ClCompile Include="base64.cpp" />
+    <ClCompile Include="JsonSerializer.cpp" />
+    <ClCompile Include="StringConverter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="type_traits_Ex.h" />
     <ClInclude Include="json-forwards.h" />
     <ClInclude Include="json.h" />
+    <ClInclude Include="base64.h" />
+    <ClInclude Include="JsonSerializer.h" />
+    <ClInclude Include="Serializer.h" />
+    <ClInclude Include="StringConverter.h" />
   </ItemGroup>
 </Project>

@@ -2,6 +2,8 @@
 
 유용하게 써먹을 수 있는 짧은 샘플 코드 저장소
 
-JSON을 저장할 때 약간의 오차가 있는 거 같아서
-해당 오차가 여러번 반복해도 늘어나지는 않는지, EPSILON 범위 이내인지를 확인함.
-결과: EPSILON 범위 이내였음
+<사용법>
+- 입력: JSONSerializer["INDEX"] << 3;
+- 출력: int a; JSONSerialzer["INDEX"] >> 3;
+
+- 커스텀 데이터의 경우 (De)SerializeBase64 함수를 명시적으로 호출해서 넣어줘야함.
