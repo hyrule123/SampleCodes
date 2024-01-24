@@ -131,16 +131,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="base64.cpp" />
     <ClCompile Include="json.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Serializer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="base64.h" />
     <ClInclude Include="json-forwards.h" />
     <ClInclude Include="json.h" />
-    <ClInclude Include="Serializer.h" />
     <ClInclude Include="type_traits_Ex.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
