@@ -27,6 +27,7 @@
 
 #include "base64.h"
 #include <iostream>
+#include <cassert>
 
 constexpr std::string_view base64_chars = 
              "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -142,6 +143,7 @@ void base64_decode(const std::string_view _encoded_string, unsigned char* _dest,
 
         if (dataSize > (size_t)_destLen)
         {
+            assert(false);
             return;
         }
     }

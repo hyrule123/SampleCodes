@@ -30,48 +30,66 @@
 		Json::Value& operator[] (const std::string_view _strKey) { return m_jVal[_strKey]; }
 
 		//타입을 가리지 않고 일단 데이터를 집어넣으므로 주의
-		template <NotPointerTypes T>
+		template <type_traits_Ex::NotPointerTypes T>
 		static void SerializeBase64(Json::Value& _jVal, const T& _val)
 		{
 			_jVal << StringConverter::Base64Encode(_val);
 		}
 		//타입을 가리지 않고 일단 데이터를 집어넣으므로 주의
-		template <NotPointerTypes T>
+		template <type_traits_Ex::NotPointerTypes T>
 		static void DeSerializeBase64(const Json::Value& _jVal, T& _val)
 		{
 			_val = StringConverter::Base64Decode<T>(_jVal.asString());
-		}		
+		}
 
 	private:
 		Json::Value m_jVal;
 	};
 
-	//template <typename T> requires std::is_arithmetic_v<T>
-	//inline void operator <<(Json::Value& _jVal, T _data)
-	//{
-	//	_jVal = Json::Value(_data);
-	//}
-
-
-	//지원 안되는 타입은 여기서 다 컷 당함
-	//지원하고자 하는 타입이 있을 경우 템플릿 특수화 기능을 통해서 추가하면 됨
-	template <NotPointerTypes T>
+	template <typename T>
+	concept JsonDefaultTypes = 
+		!type_traits_Ex::PointerTypes<T> &&
+		requires (T t)
+	{
+		{ Json::Value(t) };
+	};
+	template <typename T>
+	concept NotJsonDefaultTypes = 
+		!type_traits_Ex::PointerTypes<T> &&
+		!requires (T t)
+	{
+		{ Json::Value(t) };
+	};
+	template <JsonDefaultTypes T>
 	inline void operator <<(Json::Value& _jVal, const T& _data)
 	{
-		//Json::Value에서 지원하는 타입이 있을 시 오버로딩된 생성자로 자동 생성해서 집어넣는다.
-		_jVal = Json::Value(_data);
+		_jVal = _data;
 	}
-	
-
-	template <NotPointerTypes T>
+	template <JsonDefaultTypes T>
 	inline void operator <<(Json::Value& _jVal, T&& _data)
 	{
-		//Json::Value에서 지원하는 타입이 있을 시 오버로딩된 생성자로 자동 생성해서 집어넣는다.
-		_jVal = Json::Value(std::move(_data));
+		_jVal = std::move(_data);
 	}
 
-	template <NotPointerTypes T>
+
+	//타입을 가리지 않고 포인터 제외 데이터를 Base64로 전환하므로 주의할것.
+	//컨테이너는 StringConverter에서 함수를 별도로 만들어줄것.
+	//또한 혹시 별도의 처리를 해야 하는 데이터 타입이 있을 경우 이 함수에 대해 템플릿 특수화를 해줄것.
+	template <NotJsonDefaultTypes T>
+	inline void operator <<(Json::Value& _jVal, const T& _data)
+	{
+		_jVal = StringConverter::Base64Encode(_data);
+	}
+
+
+	template <JsonDefaultTypes T>
 	inline void operator >>(const Json::Value& _jVal, T& _data)
 	{
 		_data = _jVal.as<T>();
+	}
+
+	template <NotJsonDefaultTypes T>
+	inline void operator >>(const Json::Value& _jVal, T& _data)
+	{
+		_data = StringConverter::Base64Decode<T>(_jVal.asString());
 	}

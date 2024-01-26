@@ -36,7 +36,7 @@ public:
 	inline static std::string Base64Encode(const std::wstring_view& _srcT);
 
 	template <typename T>
-	inline static T Base64Decode(const std::string& _srcStr);
+	inline static T Base64Decode(const std::string_view _srcStr);
 
 
 private:
@@ -112,13 +112,13 @@ inline std::string StringConverter::Base64Encode(const std::wstring_view& _srcT)
 	return base64_encode(reinterpret_cast<const unsigned char*>(_srcT.data()), (unsigned int)_srcT.size() * 2u);
 }
 
+
 template<typename T>
-inline T StringConverter::Base64Decode(const std::string& _srcStr)
+inline T StringConverter::Base64Decode(const std::string_view _srcStr)
 {
-	T ReturnResult{};
-	std::string decoded = base64_decode(_srcStr);
-	memcpy_s((void*)&ReturnResult, sizeof(T), decoded.c_str(), decoded.size());
+	T returnResult{};
 
-	return ReturnResult;
+	base64_decode(_srcStr, reinterpret_cast<unsigned char*>(&returnResult), sizeof(returnResult));
+
+	return returnResult;
 }
-

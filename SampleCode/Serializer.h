@@ -10,34 +10,6 @@
 #include <string>
 
 
-	template <typename T>
-	struct Remove_Const_Reference
-	{
-		using type = std::remove_const_t<std::remove_reference_t<T>>;
-	};
-	template <typename T>
-	using Remove_Const_Reference_t = Remove_Const_Reference<T>::type;
-
-	template <typename P>
-	concept PointerTypes = requires(P p) { { *p }; }&&
-		std::equality_comparable_with<std::nullptr_t, P>;
-
-	template <typename P>
-	concept NotPointerTypes = !PointerTypes<P>;
-
-	template <typename T>
-	concept AllowedTypes =
-		//* 연산자가 있을경우(포인터일경우) 저장 불가
-		!PointerTypes<T> &&
-		//string이 아니여야 함
-		!(std::is_same_v<Remove_Const_Reference_t<T>, std::string> ||
-			std::is_same_v<Remove_Const_Reference_t<T>, std::wstring>);
-
-	template <typename T>
-	concept StringTypes =
-		std::is_same_v<T, std::string> ||
-		std::is_same_v<T, std::wstring>;
-
 
 	class Serializer
 	{

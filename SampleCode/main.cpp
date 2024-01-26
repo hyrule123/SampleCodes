@@ -17,20 +17,50 @@ template <typename P>
 concept PointerType = requires(P p) { { *p }; } &&
 std::equality_comparable_with<std::nullptr_t, P>;
 
+struct ScalarData
+{
+	int a;
+	float b;
+	double c;
+	bool d;
+};
+
 void JsonPrecisionCheck();
 
 int main()
 {
-	
-	constexpr bool pt = points_to<int*, int>;
-	constexpr bool ispt = PointerType<std::shared_ptr<int>&>;
-	constexpr bool ispt2 = NotPointerTypes<int*>;
+	//concept 작동 확인
+	constexpr bool testbool1 = JsonDefaultTypes<int>;
+	constexpr bool testbool2 = JsonDefaultTypes<int*>;
+	constexpr bool testbool3 = JsonDefaultTypes<ScalarData>;
+	constexpr bool testbool3_1 = NotJsonDefaultTypes<ScalarData>;
+	constexpr bool testbool4 = JsonDefaultTypes<size_t>;
+	constexpr bool testbool5 = JsonDefaultTypes<double>;
 
+	std::string str{};
+
+	str += (char)0b11110100;
+	str += (char)0b11011111;
+	str += (char)0b01111101;
+	
+	ScalarData mydata{};
+	mydata.a = 1;
+	mydata.b = 2.f;
+	mydata.c = 3.0;
+	mydata.d = true;
+	std::string encoded = base64_encode(reinterpret_cast<const unsigned char*>(&mydata), sizeof(mydata));
+
+	mydata = ScalarData{};
+	base64_decode(encoded, reinterpret_cast<unsigned char*>(&mydata), sizeof(mydata));
+	
+	ScalarData sd{};
 	//JsonPrecisionCheck();
 
 	{
 		JsonSerializer ser;
 		ser["INT"] << 3;
+
+		ser["CUSTOM"] << sd;
 
 		int i = 0;
 		ser["INT"] >> i;
@@ -55,13 +85,7 @@ int main()
 		i = 0;
 		ser["INT_RVALUE"] >> i;
 
-		struct ScalarData
-		{
-			int a;
-			float b;
-			double c;
-			bool d;
-		} scalarData;
+		ScalarData scalarData;
 		scalarData.a = 4;
 		scalarData.b = 3.f;
 		scalarData.c = 2.0;
@@ -101,6 +125,9 @@ int main()
 				vectorVal[i][1] << vecScalar[i].b;
 				vectorVal[i][2] << vecScalar[i].c;
 				vectorVal[i][3] << vecScalar[i].d;
+
+				//base64형태로 저장 예시
+				vectorVal[i][4] << vecScalar[i];
 			}
 		}
 
@@ -117,10 +144,13 @@ int main()
 				vectorVal[i][1] >> vecScalar[i].b;
 				vectorVal[i][2] >> vecScalar[i].c;
 				vectorVal[i][3] >> vecScalar[i].d;
+
+				//base64형태로 저장 예시
+				vectorVal[i][4] >> vecScalar[i];
 			}
+
+			__debugbreak();
 		}
-		
-		__debugbreak();
 	}
 
 	
