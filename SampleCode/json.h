@@ -973,6 +973,7 @@ namespace Json {
         /// this from the operator[] which takes a string.)
         Value& operator[](ArrayIndex index);
         Value& operator[](int index);
+        Value& operator[](size_t index);
         ///@}
 
         ///@{
@@ -981,6 +982,7 @@ namespace Json {
         /// this from the operator[] which takes a string.)
         const Value& operator[](ArrayIndex index) const;
         const Value& operator[](int index) const;
+        const Value& operator[](size_t index) const;
         ///@}
 
         /// If the array contains at least index+1 elements, returns the element

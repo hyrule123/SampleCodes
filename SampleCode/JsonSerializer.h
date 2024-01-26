@@ -29,106 +29,49 @@
 		
 		Json::Value& operator[] (const std::string_view _strKey) { return m_jVal[_strKey]; }
 
+		//타입을 가리지 않고 일단 데이터를 집어넣으므로 주의
 		template <NotPointerTypes T>
-		static Json::Value SerializeBase64(const T& _val)
+		static void SerializeBase64(Json::Value& _jVal, const T& _val)
 		{
-			return Json::Value(StringConverter::Base64Encode(_val));
+			_jVal << StringConverter::Base64Encode(_val);
 		}
+		//타입을 가리지 않고 일단 데이터를 집어넣으므로 주의
 		template <NotPointerTypes T>
-		static void DeSerializeBase64(const Json::Value& _jVal, T& _retType)
+		static void DeSerializeBase64(const Json::Value& _jVal, T& _val)
 		{
-			_retType = StringConverter::Base64Decode<T>(_jVal.asString());
-		}
-
-
-		template <typename T> requires std::is_arithmetic_v<T>
-		static Json::Value Serialize(T _i) { return Json::Value(_i); }
-
-		template <typename T> requires std::is_arithmetic_v<T>
-		static void DeSerialize(const Json::Value& _jVal, T& _retType) { _retType = _jVal.as<T>(); }
-
-		static Json::Value Serialize(const std::string_view _val) { return Json::Value(_val); };
-		static void DeSerialize(const Json::Value& _jVal, std::string& _retType) { _retType = _jVal.asString(); };
-
-		static Json::Value Serialize(const std::wstring_view _val)
-		{
-			Json::Value ret{};
-			if (false == _val.empty())
-			{
-				ret = base64_encode(reinterpret_cast<const unsigned char*>(_val.data()),
-					static_cast<unsigned int>(_val.size()) * 2u);
-			}
-			return ret;
-		}
-		static void DeSerialize(const Json::Value& _jVal, std::wstring& _val)
-		{
-			std::string decoded = base64_decode(_jVal.asString());
-			_val = std::wstring(reinterpret_cast<const wchar_t*>(decoded.c_str()));
-		}
-
-
-		
-
-	private:
-		inline bool CheckValid(const std::string_view _strKey, bool _bCheckValueExist);
-		
+			_val = StringConverter::Base64Decode<T>(_jVal.asString());
+		}		
 
 	private:
 		Json::Value m_jVal;
 	};
 
-	//지원되는 타입에 한해서 작동하는 템플릿 함수.
-	//미지원 타입 또는 커스텀 데이터의 경우에는 SerializeBase64를 사용할것.
-	template <typename T>
-	inline Json::Value& operator <<(Json::Value& _jVal, const T& _data)
+	//template <typename T> requires std::is_arithmetic_v<T>
+	//inline void operator <<(Json::Value& _jVal, T _data)
+	//{
+	//	_jVal = Json::Value(_data);
+	//}
+
+
+	//지원 안되는 타입은 여기서 다 컷 당함
+	//지원하고자 하는 타입이 있을 경우 템플릿 특수화 기능을 통해서 추가하면 됨
+	template <NotPointerTypes T>
+	inline void operator <<(Json::Value& _jVal, const T& _data)
 	{
-		Json::Value& ret = _jVal;
-		if (_jVal.isArray())
-		{
-			_jVal.append(JsonSerializer::Serialize(_data));
-		}
-		else
-		{
-			_jVal = JsonSerializer::Serialize(_data);
-		}
-		return ret;
+		//Json::Value에서 지원하는 타입이 있을 시 오버로딩된 생성자로 자동 생성해서 집어넣는다.
+		_jVal = Json::Value(_data);
+	}
+	
+
+	template <NotPointerTypes T>
+	inline void operator <<(Json::Value& _jVal, T&& _data)
+	{
+		//Json::Value에서 지원하는 타입이 있을 시 오버로딩된 생성자로 자동 생성해서 집어넣는다.
+		_jVal = Json::Value(std::move(_data));
 	}
 
-	//Json::Value에 대한 템플릿 특수화
-	template <>
-	inline Json::Value& operator <<(Json::Value& _jVal, const Json::Value& _newjVal)
+	template <NotPointerTypes T>
+	inline void operator >>(const Json::Value& _jVal, T& _data)
 	{
-		Json::Value& ret = _jVal;
-		if (_jVal.isArray())
-		{
-			_jVal.append(_newjVal);
-		}
-		else
-		{
-			_jVal = _newjVal;
-		}
-		return ret;
-	}
-
-	//Json::Value가 들어오는 경우에는 굳이 Serialize 단계를 거칠 필요가 없으므로 바로 넣어준다.
-	inline Json::Value& operator <<(Json::Value& _jVal, Json::Value&& _newjVal)
-	{
-		Json::Value& ret = _jVal;
-		if (_jVal.isArray())
-		{
-			_jVal.append(std::move(_newjVal));
-		}
-		else
-		{
-			_jVal = std::move(_newjVal);
-		}
-		return ret;
-	}
-
-	template <typename T>
-	inline const Json::Value& operator >>(const Json::Value& _jVal, T& _data)
-	{
-		const Json::Value& ret = _jVal;
-		JsonSerializer::DeSerialize(_jVal, _data);
-		return ret;
+		_data = _jVal.as<T>();
 	}

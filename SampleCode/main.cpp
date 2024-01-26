@@ -43,23 +43,84 @@ int main()
 		double d{};
 		ser["DOUBLE"] >> d;
 
-		int* pInt{};
 		//이건 에러가 발생해야함
+		int* pInt{};
 		//ser["POINTERNOTSUPPORT"] << pInt;
 
+		//이것도 에러가 발생해야함
 		std::shared_ptr<int> pSharedInt{};
 		//ser["SHAREDPOINTERSUPPORT"] << pSharedInt;
 
 		ser["INT_RVALUE"] << 3;
+		i = 0;
+		ser["INT_RVALUE"] >> i;
 
-		//struct testStruct
-		//{
-		//	int a;
-		//	float b;
-		//} teStruct;
-		//ser["TESTSTRUCT"] << teStruct;
+		struct ScalarData
+		{
+			int a;
+			float b;
+			double c;
+			bool d;
+		} scalarData;
+		scalarData.a = 4;
+		scalarData.b = 3.f;
+		scalarData.c = 2.0;
+		scalarData.d = true;
 
-		ser["JVAL"] << Json::Value();
+		//커스텀된 데이터는 Template 함수 SerializeBase64 함수를 통해서 넣을 수 있음
+		JsonSerializer::SerializeBase64(ser["BASE64"], scalarData);
+		scalarData = ScalarData{};
+		JsonSerializer::DeSerializeBase64(ser["BASE64"], scalarData);
+		
+		//또는 직접 처리도 가능
+		ser["BASE64_2"] << StringConverter::Base64Encode(scalarData);
+		scalarData = ScalarData{};
+		std::string base64Data = ser["BASE64_2"].asString();
+		scalarData = StringConverter::Base64Decode<ScalarData>(base64Data);
+		
+		//std::vector 등의 컨테이너: Json::arrayValue로 초기화된 Json::Value 변수에 저장
+		std::vector<ScalarData> vecScalar;
+		for (int i = 0; i < 10; ++i)
+		{
+			scalarData.a = 4 + i;
+			scalarData.b = (float)(3 + i);
+			scalarData.c = (double)(2 + i);
+			scalarData.d = (bool)(i % 2);
+			vecScalar.push_back(scalarData);
+		}
+
+		{
+			ser["Vector"] = Json::arrayValue;
+			Json::Value& vectorVal = ser["Vector"];
+
+			//참고 - json 내부에서 수정될 일이 없으면 아예 Base64를 통해 통으로 저장해도 됨.
+			vectorVal.resize(vectorVal.size());
+			for (size_t i = 0; i < vecScalar.size(); ++i)
+			{
+				vectorVal[i][0] << vecScalar[i].a;
+				vectorVal[i][1] << vecScalar[i].b;
+				vectorVal[i][2] << vecScalar[i].c;
+				vectorVal[i][3] << vecScalar[i].d;
+			}
+		}
+
+
+		vecScalar.clear();
+		
+		{
+			const Json::Value& vectorVal = ser["Vector"];
+			Json::Value::ArrayIndex size = vectorVal.size();
+			vecScalar.resize(size);
+			for (Json::Value::ArrayIndex i = 0; i < size; ++i)
+			{
+				vectorVal[i][0] >> vecScalar[i].a;
+				vectorVal[i][1] >> vecScalar[i].b;
+				vectorVal[i][2] >> vecScalar[i].c;
+				vectorVal[i][3] >> vecScalar[i].d;
+			}
+		}
+		
+		__debugbreak();
 	}
 
 	

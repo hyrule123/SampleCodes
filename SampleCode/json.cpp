@@ -3461,6 +3461,11 @@ namespace Json {
         return (*this)[ArrayIndex(index)];
     }
 
+    Value& Value::operator[](size_t index)
+    {
+        return (*this)[ArrayIndex(index)];
+    }
+
     const Value& Value::operator[](ArrayIndex index) const {
         JSON_ASSERT_MESSAGE(
             type() == nullValue || type() == arrayValue,
@@ -3478,6 +3483,11 @@ namespace Json {
         JSON_ASSERT_MESSAGE(
             index >= 0,
             "in Json::Value::operator[](int index) const: index cannot be negative");
+        return (*this)[ArrayIndex(index)];
+    }
+
+    const Value& Value::operator[](size_t index) const
+    {
         return (*this)[ArrayIndex(index)];
     }
 
