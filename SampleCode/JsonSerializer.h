@@ -24,8 +24,8 @@
 		JsonSerializer();
 		virtual ~JsonSerializer();
 
-		virtual bool SaveFile(std::filesystem::path const& _fullPath) override;
-		virtual bool LoadFile(std::filesystem::path const& _fullPath) override;
+		virtual eResult SaveFile(std::filesystem::path const& _fullPath) override;
+		virtual eResult LoadFile(std::filesystem::path const& _fullPath) override;
 		
 		Json::Value& operator[] (const std::string_view _strKey) { return m_jVal[_strKey]; }
 
@@ -71,6 +71,14 @@
 		_jVal = std::move(_data);
 	}
 
+	inline void operator <<(Json::Value& _jVal, const char* _data)
+	{
+		if (nullptr != _data)
+		{
+			_jVal = Json::StaticString(_data);
+		}
+	}
+
 
 	//타입을 가리지 않고 포인터 제외 데이터를 Base64로 전환하므로 주의할것.
 	//컨테이너는 StringConverter에서 함수를 별도로 만들어줄것.
@@ -80,6 +88,8 @@
 	{
 		_jVal = StringConverter::Base64Encode(_data);
 	}
+
+
 
 
 	template <JsonDefaultTypes T>

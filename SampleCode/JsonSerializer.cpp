@@ -9,12 +9,12 @@
 	JsonSerializer::~JsonSerializer()
 	{
 	}
-	bool JsonSerializer::SaveFile(std::filesystem::path const& _fullPath)
+	eResult JsonSerializer::SaveFile(std::filesystem::path const& _fullPath)
 	{
-		return false;
+		return eResult();
 	}
 
-	bool JsonSerializer::LoadFile(std::filesystem::path const& _fullPath)
+	eResult JsonSerializer::LoadFile(std::filesystem::path const& _fullPath)
 	{
-		return false;
+		return eResult();
 	}

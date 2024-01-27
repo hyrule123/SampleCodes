@@ -6,6 +6,7 @@
     <ClCompile Include="base64.cpp" />
     <ClCompile Include="JsonSerializer.cpp" />
     <ClCompile Include="StringConverter.cpp" />
+    <ClCompile Include="BinarySerializer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="type_traits_Ex.h" />
@@ -15,5 +16,8 @@
     <ClInclude Include="JsonSerializer.h" />
     <ClInclude Include="Serializer.h" />
     <ClInclude Include="StringConverter.h" />
+    <ClInclude Include="BinarySerializer.h" />
+    <ClInclude Include="define_Enum.h" />
+    <ClInclude Include="define_Macro.h" />
   </ItemGroup>
 </Project>

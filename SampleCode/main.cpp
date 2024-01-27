@@ -1,4 +1,5 @@
 ﻿#include "JsonSerializer.h"
+#include "BinarySerializer.h"
 
 #include <vector>
 #include <string>
@@ -25,6 +26,21 @@ struct ScalarData
 	bool d;
 };
 
+class TestClass
+	: public Serializable<BinarySerializer>
+	, public Serializable<JsonSerializer>
+{
+public:
+	TestClass();
+	virtual ~TestClass();
+
+	virtual eResult Serialize(JsonSerializer& _ser) override;
+	virtual eResult DeSerialize(JsonSerializer& _ser) override;
+	virtual eResult Serialize(BinarySerializer& _ser) override;
+	virtual eResult DeSerialize(BinarySerializer& _ser) override;
+
+};
+
 void JsonPrecisionCheck();
 
 int main()
@@ -36,6 +52,8 @@ int main()
 	constexpr bool testbool3_1 = NotJsonDefaultTypes<ScalarData>;
 	constexpr bool testbool4 = JsonDefaultTypes<size_t>;
 	constexpr bool testbool5 = JsonDefaultTypes<double>;
+
+	
 
 	std::string str{};
 
@@ -80,6 +98,9 @@ int main()
 		//이것도 에러가 발생해야함
 		std::shared_ptr<int> pSharedInt{};
 		//ser["SHAREDPOINTERSUPPORT"] << pSharedInt;
+
+		const char* pstr = "string";
+		ser["static string"] << pstr;
 
 		ser["INT_RVALUE"] << 3;
 		i = 0;
@@ -153,6 +174,11 @@ int main()
 		}
 	}
 
+	TestClass testc{};
+	testc.Serializable<BinarySerializer>::SaveFile("test");
+	testc.Serializable<JsonSerializer>::SaveFile("test");
+	testc.Serializable<BinarySerializer>::LoadFile("test");
+	testc.Serializable<JsonSerializer>::LoadFile("test");
 	
 	return 0;
 }
@@ -177,7 +203,6 @@ void JsonPrecisionCheck()
 			ofs.close();
 		}
 	}
-
 
 	//루프 횟수 지정
 	int loopend = 1000;
@@ -234,4 +259,32 @@ void JsonPrecisionCheck()
 			}
 		}
 	}
+}
+
+TestClass::TestClass()
+{
+}
+
+TestClass::~TestClass()
+{
+}
+
+eResult TestClass::Serialize(JsonSerializer& _ser)
+{
+	return eResult::Success;
+}
+
+eResult TestClass::DeSerialize(JsonSerializer& _ser)
+{
+	return eResult::Success;
+}
+
+eResult TestClass::Serialize(BinarySerializer& _ser)
+{
+	return eResult::Success;
+}
+
+eResult TestClass::DeSerialize(BinarySerializer& _ser)
+{
+	return eResult::Success;
 }

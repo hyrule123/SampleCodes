@@ -1,14 +1,12 @@
 #pragma once
 
 #include "type_traits_Ex.h"
+#include "define_Enum.h"
 
 #include <filesystem>
 #include <iostream>
 #include <cstdint>
 #include <vector>
-#include <concepts>
-#include <string>
-
 
 
 	class Serializer
@@ -17,8 +15,8 @@
 		Serializer() {};
 		virtual ~Serializer() {};
 	public:
-		virtual bool SaveFile(std::filesystem::path const& _fullPath) = 0;
-		virtual bool LoadFile(std::filesystem::path const& _fullPath) = 0;
+		virtual eResult SaveFile(std::filesystem::path const& _fullPath) = 0;
+		virtual eResult LoadFile(std::filesystem::path const& _fullPath) = 0;
 	};
 
 
@@ -31,40 +29,39 @@
 		virtual ~Serializable() {};
 
 	public:
-		inline bool SaveFile(std::filesystem::path const& _fullPath);
-		inline bool LoadFile(std::filesystem::path const& _fullPath);
+		inline eResult SaveFile(std::filesystem::path const& _fullPath);
+		inline eResult LoadFile(std::filesystem::path const& _fullPath);
 
-		virtual bool Serialize(T& _ser) = 0;
-		virtual bool DeSerialize(T& _ser) = 0;
+		virtual eResult Serialize(T& _ser) = 0;
+		virtual eResult DeSerialize(T& _ser) = 0;
 	};
 
 
 	template<typename T> requires std::is_base_of_v<Serializer, T>
-	inline bool Serializable<T>::SaveFile(std::filesystem::path const& _fullPath)
+	inline eResult Serializable<T>::SaveFile(std::filesystem::path const& _fullPath)
 	{
 		T ser{};
 
-		bool result = Serialize(&ser);
+		eResult result = Serialize(ser);
 		if (eResultFail(result))
 		{
-			return false;
+			return eResult::Fail;
 		}
 
 		return ser.SaveFile(_fullPath);
 	}
 
 	template<typename T> requires std::is_base_of_v<Serializer, T>
-	inline bool Serializable<T>::LoadFile(std::filesystem::path const& _fullPath)
+	inline eResult Serializable<T>::LoadFile(std::filesystem::path const& _fullPath)
 	{
 		T ser{};
-		bool result = ser.LoadFile(_fullPath);
-
+		eResult result = ser.LoadFile(_fullPath);
 		if (eResultFail(result))
 		{
-			return false;
+			return eResult::Fail;
 		}
 
-		return ser.DeSerialize();
+		return DeSerialize(ser);
 	}
 
 
