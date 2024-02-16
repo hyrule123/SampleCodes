@@ -34,6 +34,8 @@ public:
 	TestClass();
 	virtual ~TestClass();
 
+	virtual std::unique_ptr<TestClass> Clone() { return std::make_unique<TestClass>((*this)); }
+
 	virtual eResult Serialize(JsonSerializer& _ser) override;
 	virtual eResult DeSerialize(JsonSerializer& _ser) override;
 	virtual eResult Serialize(BinarySerializer& _ser) override;
@@ -41,15 +43,188 @@ public:
 
 };
 
+
 void JsonPrecisionCheck();
 
+enum e
+{
+	a,
+	b
+};
+
+enum class ec
+{
+	a, b
+};
+
+bool isMember(const std::vector<std::string_view>& _vec)
+{
+	return !_vec.empty();
+}
+
+bool testfunc(float* f) { return true; }
+bool testfunc(int* f) { return false; }
+
+class intcont
+{
+public:
+	intcont() : i() {}
+
+	template <typename T>
+	void set(const T& t) { i = (int)t; }
+
+
+	template <typename T> requires std::is_rvalue_reference_v<T>
+	void set(T&& t) noexcept { i = (int)std::move(t); }
+
+
+private:
+	int i;
+};
+
+class teststream
+{
+public:
+	teststream() {};
+	~teststream() {};
+
+
+};
+
+std::ostream& operator << (std::ostream& os, teststream t)
+{
+	int i = 3;
+
+	return os;
+}
+std::istream& operator >> (std::istream& is, teststream t)
+{
+	int j = 3;
+
+	return is;
+}
+
+template <typename Derived, typename Base>
+concept Decay_Derived_From = std::derived_from<std::decay_t<Derived>, std::decay_t<Base>>;
+
+template <typename T>
+concept is_serializable = requires (std::ostream _ofs, std::istream _ifs, T _t)
+{
+	{ _ofs << _t } -> Decay_Derived_From<std::ostream>;
+	{ _ifs >> _t } -> Decay_Derived_From<std::istream>;
+};
+
+template <typename T>
+class forwardDeclClass
+{
+public:
+	forwardDeclClass() : forwardPtr() {};
+	~forwardDeclClass() {};
+
+	T* forwardPtr;
+};
+class nonexistClass;
 int main()
 {
+	forwardDeclClass<nonexistClass> cls{};
+	
+
+	constexpr bool decayderfrom = Decay_Derived_From<const std::ostream&, std::ostream>;
+
+	constexpr bool serable = is_serializable<Json::Value>;
+	constexpr bool serable2 = is_serializable<teststream>;
+
+	constexpr bool serable3 = is_serializable<BinarySerializer>;
+
+	
+	using deleteall = std::remove_cv_t<std::remove_pointer_t<std::decay_t<const int*&&>>>;
+	using commontype = std::common_type_t<const int*&& const>;
+
+	std::ifstream ifstest;
+	teststream testream{};
+	ifstest >> testream;
+
+	ifstest.open("./here.json", std::ios::binary);
+	Json::Value jsonvaluetest;
+	ifstest >> jsonvaluetest;
+
+	size_t size = jsonvaluetest.size();
+
+	constexpr bool isderivedFrom = std::derived_from <const std::ofstream&, std::ostream>;
+	using typetype = std::decay_t<const std::ofstream&>;
+
+	float fff = 3.f;
+	intcont ic{};
+	ic.set(fff);
+
+
+	{
+		Json::Value matTest{};
+		MATRIX mat
+		{
+		1.f, 2.f, 3.f, 4.f,
+		5.f, 6.f, 7.f, 8.f,
+		9.f, 10.f, 11.f, 12.f,
+		13.f, 14.f, 15.f, 16.f
+		};
+
+		matTest << mat;
+
+		mat = MATRIX::Identity;
+
+		matTest >> mat;
+
+		int a = 3;
+	}
+	
+
+
+	float ff = 3.f;
+	bool result = testfunc(&ff);
+	int ii = 1;
+	result = testfunc(&ii);
+
+	try
+	{
+		Json::Value objVal;
+		objVal["OBJ"] = 1;
+
+		objVal.append(1);
+	}
+	catch (const std::exception& _err)
+	{
+		std::string errmsg = _err.what();
+	}
+
+
+	{
+		JsonSerializer ser{};
+
+		float3 f3 = { 1.f, 2.f, 3.f };
+		float4 f4 = { 1.f, 2.f, 3.f, 4.f };
+		ser["float3"] << f3;
+		
+
+		ser.SaveFile("./float34Test.json");
+	}
+
+
+
+	Json::Value jval2 = Json::nullValue;
+	std::string teststr = jval2.asString();
+
+	using naked = std::remove_cvref_t<const std::string&>;
+	using naked2 = std::remove_cvref_t<std::string&>;
+	using naked3 = std::decay_t<const std::string&>;
+	using naked4 = std::remove_cvref_t<const std::string*&>;
+
+
+
+
 	//concept 작동 확인
 	constexpr bool testbool1 = JsonDefaultTypes<int>;
 	constexpr bool testbool2 = JsonDefaultTypes<int*>;
 	constexpr bool testbool3 = JsonDefaultTypes<ScalarData>;
-	constexpr bool testbool3_1 = NotJsonDefaultTypes<ScalarData>;
 	constexpr bool testbool4 = JsonDefaultTypes<size_t>;
 	constexpr bool testbool5 = JsonDefaultTypes<double>;
 
@@ -75,6 +250,7 @@ int main()
 	//JsonPrecisionCheck();
 
 	{
+		constexpr bool bt = std::is_enum_v<ScalarData>;
 		JsonSerializer ser;
 		ser["INT"] << 3;
 
@@ -113,9 +289,9 @@ int main()
 		scalarData.d = true;
 
 		//커스텀된 데이터는 Template 함수 SerializeBase64 함수를 통해서 넣을 수 있음
-		JsonSerializer::SerializeBase64(ser["BASE64"], scalarData);
+		//JsonSerializer::SerializeBase64(ser["BASE64"], scalarData);
 		scalarData = ScalarData{};
-		JsonSerializer::DeSerializeBase64(ser["BASE64"], scalarData);
+		//JsonSerializer::DeSerializeBase64(ser["BASE64"], scalarData);
 		
 		//또는 직접 처리도 가능
 		ser["BASE64_2"] << StringConverter::Base64Encode(scalarData);

@@ -136,6 +136,7 @@
     <ClCompile Include="json.cpp" />
     <ClCompile Include="JsonSerializer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="SimpleMath.cpp" />
     <ClCompile Include="StringConverter.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -147,8 +148,12 @@
     <ClInclude Include="json.h" />
     <ClInclude Include="JsonSerializer.h" />
     <ClInclude Include="Serializer.h" />
+    <ClInclude Include="SimpleMath.h" />
     <ClInclude Include="StringConverter.h" />
     <ClInclude Include="type_traits_Ex.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="SimpleMath.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
