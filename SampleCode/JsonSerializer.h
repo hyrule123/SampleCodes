@@ -6,6 +6,7 @@
 #include <unordered_set>
 
 #include "SimpleMath.h"
+#include <utility>
 
 
 #define MAKE_JSONPAIR(_var) JsonSerializer::JsonPair(#_var, _var)
@@ -56,16 +57,16 @@ using MATRIX = ehw::math::Matrix;
 		!JsonTypeSpecialization<T> &&
 		!requires (T t) { { Json::Value(t) }; };
 
-	template <JsonDefaultTypes T>
-	inline void operator <<(Json::Value& _jVal, const T& _data)
-	{
-		_jVal = _data;
-	}
+	//template <JsonDefaultTypes T>
+	//inline void operator <<(Json::Value& _jVal, const T& _data)
+	//{
+	//	_jVal = _data;
+	//}
 
 	template <JsonDefaultTypes T>
 	inline void operator <<(Json::Value& _jVal, T&& _data) noexcept
 	{
-		_jVal = std::move(_data);
+		_jVal = std::forward<T>(_data);
 	}
 
 	//타입을 가리지 않고 포인터 제외 데이터를 Base64로 전환하므로 주의할것.

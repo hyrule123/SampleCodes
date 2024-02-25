@@ -1,88 +1,130 @@
-﻿#include <iostream>
-#include <vector>
-#include <string>
+﻿#include "SimpleMath.h"
 
-struct Child
+#include <iostream>
+#include <sstream>
+
+void PrintMatrix(const char* _matName, const ehw::math::Matrix& _mat)
 {
-public:
-	Child() : m_id(++s_id) { ID(); std::cout << "Child 생성자 호출" << std::endl; };
-	Child(const Child& _other) : m_id(++s_id) { ID(); std::cout << "Child 복사 생성자 호출" << std::endl; }
-	Child(Child&& _move) noexcept : m_id(std::move(_move.m_id)) { ID(); std::cout << "Child 이동 생성자 호출" << std::endl; }
-	~Child() { ID(); std::cout << "Child 소멸자 호출" << std::endl; }
+	using namespace ::ehw::math;
 
-	Child& operator=(const Child& _other) { m_id = _other.m_id; std::cout << "Child 대입 연산자 호출" << std::endl; return *this; }
-	Child& operator=(Child&& _other) noexcept { m_id = std::move(_other.m_id); std::cout << "Child 이동 연산자 호출" << std::endl; return *this; }
-
-private:
-	int m_id;
-	void ID() { std::cout << "ID: " << m_id << " - "; }
-
-	static int s_id;
+	std::cout << "\n행렬 이름: " << _matName << std::endl;
 	
-};
-int Child::s_id = 0;
+	for (int i = 0; i < 4; ++i)
+	{
+		std::stringstream str{};
 
-class Parent
+		for (int j = 0; j < 4; ++j)
+		{
+			str << std::to_string(_mat.m[i][j]) << ", ";
+		}
+
+		str << "\n";
+
+		std::cout << str.str() << std::endl;
+	}
+}
+
+void MatrixCmp(const ::ehw::math::Matrix& _matA, const ::ehw::math::Matrix& _matB, float _threshold = 0.01f)
 {
-public:
-	Parent() : m_var() { std::cout << "Parent 생성자 호출" << std::endl; }
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			if (_threshold < fabsf(_matA.m[i][j] - _matB.m[i][j]))
+			{
+				std::cout << "=========================";
+				std::cout << " 다름 ";
+				std::cout << "=========================" << std::endl;
+				return;
+			}
+		}
+	}
 
-	Parent(const Parent& _other) : m_var(_other.m_var) { std::cout << "Parent 복사 생성자 호출" << std::endl; }
-
-	Parent(Parent&& _move) noexcept : m_var(std::move(_move.m_var)) { std::cout << "Parent 이동 생성자 호출" << std::endl; }
-
-	~Parent() { std::cout << "Parent 소멸자 호출" << std::endl; }
-
-	Parent& operator=(const Parent& _other) { m_var = _other.m_var; std::cout << "Parent 대입 연산자 호출" << std::endl; return *this; }
-	Parent& operator=(Parent&& _other) noexcept { m_var = std::move(_other.m_var); std::cout << "Parent 이동 연산자 호출" << std::endl; return *this; }
-
-private:
-	Child m_var;
-};
-
-
+	std::cout << "=========================";
+	std::cout << " 같음 ";
+	std::cout << "=========================" << std::endl;
+}
 
 int main()
 {
-	std::vector<Parent> vecTst(0);
+	using namespace ::ehw::math;
+	Matrix child = Matrix::Identity;
+	Matrix parent = Matrix::Identity;
+
+	Vector3 parentScale = Vector3(2.f);
+	Quaternion parentRot = Quaternion::CreateFromYawPitchRoll(Vector3(XM_PI / 1.f, XM_PI / 2.f, XM_PI / 3.f));
+	Vector3 parentPos = Vector3(3.f);
+		
+	parent *= Matrix::CreateScale(parentScale);
+	parent *= Matrix::CreateFromQuaternion(parentRot);
+	parent *= Matrix::CreateTranslation(parentPos);
+
+	Vector3 childScale = Vector3(3.f);
+	Quaternion childRot = Quaternion::CreateFromYawPitchRoll(Vector3(XM_PI * 3.1235f, XM_PI * 12.3853f, XM_PI * 8.192f));
+	Vector3 childPos = Vector3(4.f);
+	child *= Matrix::CreateScale(childScale);
+	child *= Matrix::CreateFromQuaternion(childRot);
+	child *= Matrix::CreateTranslation(childPos);
+
+	Matrix childWorld = child * parent;
+
+	Vector3 childWorldScale = childScale * parentScale;
+	Quaternion childWorldRot = childRot * parentRot;
+	Vector3 chileWorldPos = childWorld.Translation();
+
+	//행렬끼리 곱한 결과와 world SRT를 각각 구한 값이 동일한지 확인
+	//결론: 동일(World Translation 값만 알고 있다면 동일한 행렬을 만들어낼 수 있는것을 확인함)
+	Matrix createFromWorldValues = Matrix::CreateScale(childWorldScale)
+		* Matrix::CreateFromQuaternion(childWorldRot)
+		* Matrix::CreateTranslation(chileWorldPos);
+
+	Matrix scaleMat = Matrix::CreateScale(childWorldScale);
+
+	PrintMatrix("childWorld", childWorld);
+	PrintMatrix("createFromWorldValues", createFromWorldValues);
+
+	MatrixCmp(childWorld, createFromWorldValues);
+
+
+	//내장된 Decompose 함수를 통한 SRT 분해
+	Vector3 decomposedWorldScale{};
+	Quaternion decomposedWorldRot{};
+	Vector3 decomposedWorldPos{};
+
+	childWorld.Decompose(decomposedWorldScale, decomposedWorldRot, decomposedWorldPos);
+
+
+	//쿼터니언 역수 확인
 	
-	{
-		Parent tst{};
-		std::cout << std::endl;
+	Matrix invWorldRot = Matrix::CreateFromQuaternion(childWorldRot);
+	Matrix childWorld_multiplyInvRot = invWorldRot * childWorld;
 
-		std::cout << "<push_back>" << std::endl;
-		vecTst.push_back(tst);
-		std::cout << std::endl;
+	Matrix childWorld_recomposed_withoutRot = 
+		Matrix::CreateScale(decomposedWorldScale)
+		* Matrix::CreateFromQuaternion(Quaternion::Identity)
+		* Matrix::CreateTranslation(decomposedWorldPos);
 
-		std::cout << "<Reserve std::vector size to 10>" << std::endl;
-		vecTst.reserve(10);
-		std::cout << std::endl;
-
-		//복사생성해서 새로운 인스턴스를 생성 후 해당 인스턴스를 이동시킨다.
-		std::cout << "<std::move 없는 emplace_back>" << std::endl;
-		vecTst.emplace_back(tst);
-		std::cout << std::endl;
-
-		std::cout << "<std::move 사용한 emplace_back>" << std::endl;
-		vecTst.emplace_back(std::move(tst));
-		//이걸 주석풀고 한번 더 해주면 경고가 나오는걸 볼수있음. 개체에서 이동됨 사용:tst (lifetime 1)
-		//vecTst.emplace_back(std::move(tst));
-		std::cout << std::endl;
-
-		//https://stackoverflow.com/questions/55376494/default-move-assignment-calls-destructor-copy-assignment-doesnt
-		//Move할 경우 소멸자가 호출된다고 함.(기존 tst에 있던 undefined 상태의 변수에 대한 소멸자 호출인듯)
-		std::cout << "<undefined 상태의 tst lvalue에 새 변수 할당>" << std::endl;
-		tst = Parent();
-		std::cout << std::endl;
-
-		//emplace_back과 똑같이 이동생성자가 호출되고 있음.
-		std::cout << "<std::move 사용한 push_back>" << std::endl;
-		vecTst.push_back(std::move(tst));
-		std::cout << std::endl;
+	PrintMatrix("childWorld_multiplyInvRot", childWorld_multiplyInvRot);
+	PrintMatrix("childWorld_recomposed_withoutRot", childWorld_recomposed_withoutRot);
+	MatrixCmp(childWorld_multiplyInvRot, childWorld_recomposed_withoutRot);
 
 
+	//Scale만 곱한 값의 역수를 앞에 곱해주면 크기정보 제거가 가능한지 확인
+	Matrix recomposedChild_without_scale = 
+		Matrix::CreateScale(Vector3::One) 
+		* Matrix::CreateFromQuaternion(decomposedWorldRot) 
+		* Matrix::CreateTranslation(decomposedWorldPos);
 
-		int a = 3;
-	}
+	Vector3 childWorldScaleInvert = Vector3(1.f) / (childScale * parentScale);
+	Matrix childWorld_without_scale = Matrix::CreateScale(childWorldScaleInvert) * childWorld;
+
+	PrintMatrix("recomposedChild_without_scale", recomposedChild_without_scale);
+	PrintMatrix("childWorld_without_scale", childWorld_without_scale);
+
+	MatrixCmp(recomposedChild_without_scale, childWorld_without_scale);
+
+	return 0;
 }
+
+
 
