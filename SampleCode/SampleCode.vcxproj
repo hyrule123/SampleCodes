@@ -136,6 +136,7 @@
     <ClCompile Include="json.cpp" />
     <ClCompile Include="JsonSerializer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="NVRO_TEST.cpp" />
     <ClCompile Include="SimpleMath.cpp" />
     <ClCompile Include="StringConverter.cpp" />
   </ItemGroup>
@@ -147,6 +148,7 @@
     <ClInclude Include="json-forwards.h" />
     <ClInclude Include="json.h" />
     <ClInclude Include="JsonSerializer.h" />
+    <ClInclude Include="NVRO_TEST.h" />
     <ClInclude Include="Serializer.h" />
     <ClInclude Include="SimpleMath.h" />
     <ClInclude Include="StringConverter.h" />

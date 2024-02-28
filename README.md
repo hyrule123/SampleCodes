@@ -2,16 +2,6 @@
 
 유용하게 써먹을 수 있는 짧은 샘플 코드 저장소
 
-SRT 각 행렬은 다음과 같은 특징을 가진다.
-S: 단위행렬 E의 배수 형태(11, 22, 33에 크기정보, 44는 1).
- 대각선 행렬(diagonal matrix)이므로 역행렬 존재. 교환법칙 무조건 성립 가능.
-R: 직교행렬(orthogonal matrix). 직교행렬은 전치행렬이 곧 역행렬이다.
-T: 판별식이 0. 교환법칙 성립하지 않음.
-
-child Transform의 world 행렬: ScRcTc*SpRpTp
-S: 언제나 교환법칙이 성립함. 앞으로 보낼 수 있음 -> ScSp * RcTc * RpTp
-R: 교환법칙은 성립하지 않으나, S행렬과 R행렬은 지들끼리만 놈.
-T: 계산 '결과'가 저장됨.
- SR 행렬에 영향을 받으나, SR 행렬에 영향을 미치지 않음. 교환법칙도 성립 안함.
--> 그러나, T행렬이 영향을 미치지 않으므로 최종 T 결과(Tw)를 알고 있다면,
-ScSp * RcRp * Tw가 가능하다는 것.
+* 분기가 있는 함수에 NRVO 복사 생략이 적용되는가?
+* 참고 코드: https://stackoverflow.com/questions/35736568/is-there-a-way-to-check-if-rvo-was-applied
+* 결론: 적용됨
