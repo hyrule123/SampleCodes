@@ -32,3 +32,5 @@ REMOVED!!
 REMOVED!!
 Returned Value address: 0000008D6BAFF544
 -> 두 단계가 추가된 것을 확인 가능. 또한 반환받은 변수의 주소가 달라졌다.
+
+*참고 주소: https://hodongman.github.io/2020/11/02/C++-copy-Elision-copy.html
