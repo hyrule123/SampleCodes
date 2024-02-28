@@ -9,7 +9,7 @@ class NRVOTEST
 public:
 	NRVOTEST();
 	NRVOTEST(const NRVOTEST& _other);
-	NRVOTEST(NRVOTEST&& _other) noexcept;
+	NRVOTEST(NRVOTEST&& _move) noexcept;
 	~NRVOTEST();
 
 
@@ -18,5 +18,4 @@ private:
 };
 
 NRVOTEST NRVO_TESTFUNC(bool _b);
-std::vector<NRVOTEST> VECTOR_NRVO_TESTFUNC(NRVOTEST&& test, bool bInsert) noexcept;
 

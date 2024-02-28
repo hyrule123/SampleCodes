@@ -4,10 +4,8 @@
 int main()
 {
 	NRVOTEST nvro = NRVO_TESTFUNC(true);
-	std::cout << "ADDRESS: " << reinterpret_cast<size_t>(&nvro) << std::endl;
-
-	std::vector<NRVOTEST> vecNVRO = VECTOR_NRVO_TESTFUNC(NRVOTEST(), false);
-
+	std::cout << "Returned Value address: " << &nvro << std::endl;
+	__debugbreak();
 	return 0;
 }
 
