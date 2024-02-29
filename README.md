@@ -2,35 +2,16 @@
 
 유용하게 써먹을 수 있는 짧은 샘플 코드 저장소
 
-* NRVO(Named Return Value Optimization)
-	- 반환하는 변수가 non-volatile일 때 적용된다고 함.
-	- 반환받을 l-value에 직접 반환될 데이터를 작성
-	- 상황에 따라 반환값이 달라지는 경우에는 적용이 되지 않음
+SRT 각 행렬은 다음과 같은 특징을 가진다.
+S: 단위행렬 E의 배수 형태(11, 22, 33에 크기정보, 44는 1).
+ 대각선 행렬(diagonal matrix)이므로 역행렬 존재. 교환법칙 무조건 성립 가능.
+R: 직교행렬(orthogonal matrix). 직교행렬은 전치행렬이 곧 역행렬이다.
+T: 판별식이 0. 교환법칙 성립하지 않음.
 
-	
-* 분기가 있는 함수에 NRVO 복사 생략이 적용되는가?
-* 참고 코드: https://stackoverflow.com/questions/35736568/is-there-a-way-to-check-if-rvo-was-applied
-* 결론: 적용됨
-
-
-NRVO가 적용되었을 때(분기에 상관없이 하나의 지역변수를 반환할 때)
-Created!!
-Created!!
-Local Value 1 address: 0000002EAC79F734
-Local Value 2 address: 0000002EAC79F5E4
-REMOVED!!
-Returned Value address: 0000002EAC79F734
--> Local Value 1의 주소와 반환받은 변수의 주소가 같은것을 확인 가능하다.
-
-NVRO가 적용되지 않았을 때(분기에 따라 반환하는 변수가 바뀔 때)
-Created!!
-Created!!
-Local Value 1 address: 0000008D6BAFF3D4
-Local Value 2 address: 0000008D6BAFF3F4
-MOVED!!
-REMOVED!!
-REMOVED!!
-Returned Value address: 0000008D6BAFF544
--> 두 단계가 추가된 것을 확인 가능. 또한 반환받은 변수의 주소가 달라졌다.
-
-*참고 주소: https://hodongman.github.io/2020/11/02/C++-copy-Elision-copy.html
+child Transform의 world 행렬: ScRcTc*SpRpTp
+S: 대각선(Diagonal) 행렬. 11, 22, 33번째 원소가 각 축의 크기에 비례함. 교환법칙 성립하지 않음.
+R: 교환법칙은 성립하지 않으나, S행렬과 R행렬은 지들끼리만 놈.
+T: 계산 '결과'가 저장됨.
+ SR 행렬에 영향을 받으나, SR 행렬에 영향을 미치지 않음. 교환법칙도 성립 안함.
+-> 그러나, T행렬이 영향을 미치지 않으므로 최종 T 결과(Tw)를 알고 있다면,
+ScSp * RcRp * Tw가 가능하다는 것.
