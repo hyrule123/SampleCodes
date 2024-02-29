@@ -132,24 +132,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="base64.cpp" />
-    <ClCompile Include="BinarySerializer.cpp" />
     <ClCompile Include="json.cpp" />
-    <ClCompile Include="JsonSerializer.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="NVRO_TEST.cpp" />
+    <ClCompile Include="MatrixDecomposer.cpp" />
     <ClCompile Include="SimpleMath.cpp" />
     <ClCompile Include="StringConverter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="base64.h" />
-    <ClInclude Include="BinarySerializer.h" />
     <ClInclude Include="define_Enum.h" />
     <ClInclude Include="define_Macro.h" />
-    <ClInclude Include="json-forwards.h" />
     <ClInclude Include="json.h" />
-    <ClInclude Include="JsonSerializer.h" />
-    <ClInclude Include="NVRO_TEST.h" />
-    <ClInclude Include="Serializer.h" />
+    <ClInclude Include="MatrixDecomposer.h" />
+    <ClInclude Include="polar_decomposition_3x3.h" />
+    <ClInclude Include="polar_decomposition_3x3_impl.h" />
+    <ClInclude Include="polar_decomposition_3x3_matrix.h" />
     <ClInclude Include="SimpleMath.h" />
     <ClInclude Include="StringConverter.h" />
     <ClInclude Include="type_traits_Ex.h" />
