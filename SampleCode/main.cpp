@@ -1,79 +1,40 @@
-﻿#include "MatrixDecomposer.h"
+﻿#include <string>
+
+//참고
+//https://stackoverflow.com/questions/9356169/utf-8-continuation-bytes
+size_t Strlen_UTF8(const std::string_view _str);
 
 int main()
 {
-	using namespace ::ehw::math;
+	std::string test = "안녕하세요.";
 
-	//정답
-	Matrix TransformationOriginal =
-	{
-		-2.f, -1.f, 0.f, 2.f,
-		-2.f, 1.f, 0.f, -1.f,
-		0.f, 0.f, 1.f, 0.f,
-		0.f, 0.f, 0.f, 1.f
-	};
-
-	//질문자가 잘못 입력한 Scale 값을 집어넣었을 때 나오는 결과
-
-	Matrix Transformation = Transformation.Transpose();
-
-	Matrix Translation =
-	{
-		1.f, 0.f, 0.f, 2.f,
-		0.f, 1.f, 0.f, -1.f,
-		0.f, 0.f, 1.f, 0.f,
-		0.f, 0.f, 0.f, 1.f
-	};
-	Translation = Translation.Transpose();
-
-	float sqrt2Inv = 1.f / sqrtf(2.f);
-	Matrix Rotation =
-	{
-		sqrt2Inv,	-sqrt2Inv,	0.f,	0.f,
-		sqrt2Inv,	sqrt2Inv,	0.f,	0.f,
-		0.f,		0.f,		1.f,	0.f,
-		0.f,		0.f,		0.f,	1.f
-	};
-	Rotation = Rotation.Transpose();
-
-	float sqrt2 = sqrtf(2.f);
-
-	//원래 맞는 Scale 행렬
-	Matrix ScaleOriginal = 
-	{
-		-2.f * sqrt2,	0.f,	0.f,	0.f,
-		0.f,			sqrt2,	0.f,	0.f,
-		0.f,			0.f,	1.f,	0.f,
-		0.f,			0.f,	0.f,	1.f
-	};
-
-	Matrix Scale = ScaleOriginal.Transpose();
-
-	Matrix World = Scale * Rotation * Translation;
-
-	
-	Matrix H = {
-		1.f, 0.f, 1.f, 0.f,
-		1.f, 1.f, 1.f, 0.f,
-		1.f, 1.f, 0.f, 1.f,
-		0.f, 0.f, 0.f, 1.f
-	};
-	H = H.Transpose();
-	MatrixDecomposer decomposer(H);
-	
-	Matrix T, R, S;
-	decomposer.Decompose(T, R, S);
-
-
-	//Translation 구하기
-	//Obtain the translation  T  from the last column and the linear component  L  from the 3x3 upper-left block.
-	//H = TL
-
-
+	size_t len = Strlen_UTF8(test);
 
 	return 0;
 
 }
 
 
-
+size_t Strlen_UTF8(const std::string_view _str)
+{
+	//UTF-8 길이에 따른 비트 값
+	//1 byte:  0b 0xxx xxxx
+	//2 bytes: 0b 110x xxxx / 01xx xxxx
+	//3 bytes: 0b 1110 xxxx / 01xx xxxx / 01xx xxxx
+	//4 bytes: 0b 1111 0xxx / 01xx xxxx / 01xx xxxx / 01xx xxxx
+	//이론상 이런식으로 6바이트까지 가능하나 호환성을 위해 쓰지 않음.
+	
+	//연속된 바이트를 사용할 떄 첫 바이트는 '11'로 시작하는 것을 알수 있다.
+	//->만약 11로 시작하는 비트일 때, '11'에서 앞의 1('10')을 제거해준 다음, 여전히 참이면 카운트를 올려주면 된다.
+	
+	constexpr char leadingByte = 0b11000000;
+	constexpr char ContinuationByte = 0b10000000;
+	size_t len{};
+	for (size_t i = 0; i < _str.size(); ++i)
+	{
+		//Continuation Byte와 한번 더 체크를 하는 이유: '11'과 & 연산을 시행했을 때 '01'만 남을수도 있음
+		//bool 연산 결과를 바로 +=로 넘겨준다.
+		len += ((_str[i] & leadingByte) != ContinuationByte);
+	}
+	return len;
+}
