@@ -1,88 +1,30 @@
 ﻿#include <vector>
+#include <list>
+#include <functional>
+#include <memory>
 #include <iostream>
-#include <random>
 
-class test
+void foo(std::unique_ptr<int>&& i) noexcept
 {
-public:
-	test()
+	if (i)
 	{
-		//std::cout << "Constructor" << std::endl;
-		
-		int a = rand();
-		a = rand();
-		testBool = (bool)(rand() % 2);
-		std::cout << testBool << std::endl;
+		std::cout << *i << std::endl;
 	}
-	~test()
-	{
-		std::cout << "Destructor" << std::endl;
-	}
-
-	test(const test& _other)
-		:testBool(_other.testBool)
-	{
-		std::cout << "Copy Constructor" << std::endl;
-	}
-
-	test(test&& _move) noexcept
-		: testBool(_move.testBool)
-	{
-		std::cout << "Move Constructor" << std::endl;
-	}
-
-	void operator = (const test& _other)
-	{
-		testBool = _other.testBool;
-		std::cout << "Copy Assignment" << std::endl;
-	}
-	void operator = (test&& _move) noexcept
-	{
-		testBool = _move.testBool;
-		std::cout << "Move Assignment" << std::endl;
-	}
-
-	bool testBool;
-	std::shared_ptr<int> i;
-};
+}
 
 int main()
 {
-	srand(time(0));
+	std::vector<int> vec1{ 1, 2, 3, 4, 5 };
+	std::vector<int> vec2{ 5, 6 ,7 ,8 ,9 };
 
-	std::cout << "start" << std::endl;
-	{
-		std::vector<test> testVec(500);
+	//from 벡터의 사이즈를 알 수 있는 경우 O(n)이라고 한다.
+	auto iter = vec1.insert(vec1.end(), std::make_move_iterator(vec2.begin() + 1), std::make_move_iterator(vec2.end()));
 
-		std::partition(testVec.begin(), testVec.end(),
-			[](const test& _test)->bool
-			{
-				return _test.testBool;
-			}
-		);
+	//iter 반환값: 옮겨붙인 곳의 시작점 iterator
+	std::cout << *iter << std::endl;
 
-		testVec.clear();
-
-		int b = 3;
-	}
-	std::cout << "=====================" << std::endl;
-	{
-		std::vector<test> testVec(500);
-		std::erase_if(testVec,
-			[](const test& _test)->bool
-			{
-				return _test.testBool;
-			}
-		);
-
-		
-
-		int b = 3;
-	}
-
-
-
-	int a = 3;
+	//옮기고 난 뒤에 vec2는 undefined state가 되므로 clear 또는 옮겨진 부분 뒷쪽을 제거해주어야 한다.
+	vec2.resize((vec2.begin() + 1) - vec2.begin());
 
 	return 0;
 }
