@@ -22,6 +22,12 @@ void forw(T&& t, ARGS&&... args) {
 	forw(std::forward<ARGS>(args)...);
 }
 
+#define CONCAT(x, y) CONCAT_INNER(x, y)
+#define CONCAT_INNER(x, y) x ## y
+#define UNIQUE_VAR(x) CONCAT(x##_, __LINE__)
+
+constexpr int UNIQUE_VAR(hi) = 3;
+
 int main()
 {
 	forw(vecstr[0], vecstr[1], vecstr[2], vecstr[3], vecstr[4]);
