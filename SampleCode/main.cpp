@@ -1,42 +1,40 @@
-﻿#include <vector>
-#include <list>
-#include <functional>
-#include <memory>
+﻿#include <unordered_map>
 #include <iostream>
-#include <string>
 
-std::vector<std::string> vecstr = { "1", "2", "3", "4", "5" };
-std::vector<std::function<void()>> vec;
+struct hash_key {
+	unsigned int* a, * b;
 
-void forw() {
-}
-
-template <typename T, typename... ARGS>
-void forw(T&& t, ARGS&&... args) {
-	vec.push_back(
-		[t]()->void {
-			std::cout << t << std::endl;
-		}
-	);
-
-	forw(std::forward<ARGS>(args)...);
-}
-
-#define CONCAT(x, y) CONCAT_INNER(x, y)
-#define CONCAT_INNER(x, y) x ## y
-#define UNIQUE_VAR(x) CONCAT(x##_, __LINE__)
-
-constexpr int UNIQUE_VAR(hi) = 3;
-
-int main()
-{
-	forw(vecstr[0], vecstr[1], vecstr[2], vecstr[3], vecstr[4]);
-
-	vecstr.clear();
-
-	for (const auto& f : vec) {
-		f();
+	bool operator == (const hash_key& _other) const {
+		return (a == _other.a) && (b == _other.b);
 	}
+
+	struct hasher {
+		static_assert(sizeof(std::size_t) == sizeof(std::uint64_t));
+		size_t operator ()(const hash_key& _key) const {
+			size_t h = *(_key.a);
+			h <<= 32;
+			h |= *(_key.b);
+			return h;
+		}
+	};
+};
+
+int main() {
+	
+	hash_key k;
+	k.a = new unsigned int;
+	k.b = new unsigned int;
+
+	*(k.a) = 0xffffffff;
+	*(k.b) = 0xffffffff;
+
+	hash_key::hasher hs;
+	size_t custom_hash = hs(k);
+
+	std::unordered_map<hash_key, int, hash_key::hasher> kv;
+	kv[k] = 5000;
+
+	std::cout << kv[k];
 
 	return 0;
 }
