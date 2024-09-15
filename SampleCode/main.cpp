@@ -1,6 +1,14 @@
 ﻿#include <unordered_map>
 #include <iostream>
 
+struct custom {
+	~custom() {
+		std::cout << "DESTRUCTOR CALLED'\n";
+	}
+
+	int i;
+};
+
 struct hash_key {
 	unsigned int* a, * b;
 
@@ -11,19 +19,21 @@ struct hash_key {
 	struct hasher {
 		static_assert(sizeof(std::size_t) == sizeof(std::uint64_t));
 		size_t operator ()(const hash_key& _key) const {
-			union key_maker {
-				static_assert(sizeof(size_t) == sizeof(std::uint64_t), "size_t가 64bit가 아님. 처리코드 필요");
-				struct key_pair {
-					std::uint32_t a, b;
-				} pair;
-				size_t key;
-			};
-			key_maker keymaker;
-			keymaker.pair.a = *(_key.a);
-			keymaker.pair.b = *(_key.b);
-			return keymaker.key;
+			size_t ret{};
+			ret = *(_key.a);
+			ret <<= 32;
+			ret |= *(_key.b);
+			return ret;
+		}
+
+		custom operator()(const custom& c) const {
+			custom ret{};
+			ret.i = c.i;
+			return ret;
 		}
 	};
+
+	
 };
 
 int main() {
@@ -37,6 +47,9 @@ int main() {
 
 	hash_key::hasher hs;
 	size_t custom_hash = hs(k);
+
+	custom inp{ 3 };
+	custom outp = hs(inp);
 
 	std::unordered_map<hash_key, int, hash_key::hasher> kv;
 	kv[k] = 5000;
