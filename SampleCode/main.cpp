@@ -1,60 +1,51 @@
-﻿#include <unordered_map>
+﻿#include <chrono>
+#include <vector>
 #include <iostream>
 
-struct custom {
-	~custom() {
-		std::cout << "DESTRUCTOR CALLED'\n";
-	}
-
-	int i;
+struct matrix {
+	double m[16];
 };
 
-struct hash_key {
-	unsigned int* a, * b;
+constexpr size_t testcount = 100000;
 
-	bool operator == (const hash_key& _other) const {
-		return (a == _other.a) && (b == _other.b);
+__declspec(noinline) void test1() {
+	std::vector<matrix> vec;
+	vec.reserve(testcount);
+
+	size_t elemval = 0;
+	for (size_t i = 0; i < testcount; ++i) {
+		matrix mat;
+		for (size_t j = 0; j < 16; ++j) {
+			mat.m[j] = (double)++elemval;
+		}
+		vec.push_back(mat);
 	}
+}
+__declspec(noinline) void test2() {
+	std::vector<matrix> vec;
+	vec.resize(testcount);
 
-	struct hasher {
-		static_assert(sizeof(std::size_t) == sizeof(std::uint64_t));
-		size_t operator ()(const hash_key& _key) const {
-			size_t ret{};
-			ret = *(_key.a);
-			ret <<= 32;
-			ret |= *(_key.b);
-			return ret;
+	size_t elemval = 0;
+	for (size_t i = 0; i < testcount; ++i) {
+		for (size_t j = 0; j < 16; ++j) {
+			vec[i].m[j] = (double)++elemval;
 		}
-
-		custom operator()(const custom& c) const {
-			custom ret{};
-			ret.i = c.i;
-			return ret;
-		}
-	};
-
-	
-};
+	}
+}
 
 int main() {
-	
-	hash_key k;
-	k.a = new unsigned int;
-	k.b = new unsigned int;
+	std::chrono::steady_clock::time_point start;
+	std::chrono::duration<float> dur;
 
-	*(k.a) = 0xffffffff;
-	*(k.b) = 0xffffffff;
+	start = std::chrono::steady_clock::now();
+	test1();
+	dur = std::chrono::steady_clock::now() - start;
+	std::cout << dur.count() << std::endl;
 
-	hash_key::hasher hs;
-	size_t custom_hash = hs(k);
-
-	custom inp{ 3 };
-	custom outp = hs(inp);
-
-	std::unordered_map<hash_key, int, hash_key::hasher> kv;
-	kv[k] = 5000;
-
-	std::cout << kv[k];
+	start = std::chrono::steady_clock::now();
+	test2();
+	dur = std::chrono::steady_clock::now() - start;
+	std::cout << dur.count() << std::endl;
 
 	return 0;
 }
