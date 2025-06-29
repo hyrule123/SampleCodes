@@ -1,51 +1,30 @@
-﻿#include <chrono>
-#include <vector>
+﻿#include <memory>
 #include <iostream>
+#include <functional>
 
-struct matrix {
-	double m[16];
+
+class foo
+{
+public:
+	foo() {}
+	virtual ~foo() {}
+
+	void bar(int i)
+	{
+		std::cout << i;
+		std::cout << " bar called!!\n";
+	}
 };
 
-constexpr size_t testcount = 100000;
 
-__declspec(noinline) void test1() {
-	std::vector<matrix> vec;
-	vec.reserve(testcount);
+int main()
+{
+	foo b;
 
-	size_t elemval = 0;
-	for (size_t i = 0; i < testcount; ++i) {
-		matrix mat;
-		for (size_t j = 0; j < 16; ++j) {
-			mat.m[j] = (double)++elemval;
-		}
-		vec.push_back(mat);
-	}
-}
-__declspec(noinline) void test2() {
-	std::vector<matrix> vec;
-	vec.resize(testcount);
+	std::function<void(foo*, int)> func
+		= std::bind(&foo::bar, std::placeholders::_1, std::placeholders::_2);
 
-	size_t elemval = 0;
-	for (size_t i = 0; i < testcount; ++i) {
-		for (size_t j = 0; j < 16; ++j) {
-			vec[i].m[j] = (double)++elemval;
-		}
-	}
-}
-
-int main() {
-	std::chrono::steady_clock::time_point start;
-	std::chrono::duration<float> dur;
-
-	start = std::chrono::steady_clock::now();
-	test1();
-	dur = std::chrono::steady_clock::now() - start;
-	std::cout << dur.count() << std::endl;
-
-	start = std::chrono::steady_clock::now();
-	test2();
-	dur = std::chrono::steady_clock::now() - start;
-	std::cout << dur.count() << std::endl;
+	func(&b, 3);
 
 	return 0;
 }
