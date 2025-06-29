@@ -19,12 +19,12 @@ public:
 
 int main()
 {
-	foo b;
+	std::shared_ptr<foo> sptr = std::make_shared<foo>();
 
-	std::function<void(foo*, int)> func
+	std::function<void(const std::shared_ptr<foo>&, int)> func
 		= std::bind(&foo::bar, std::placeholders::_1, std::placeholders::_2);
 
-	func(&b, 3);
+	func(sptr, 3);
 
 	return 0;
 }
