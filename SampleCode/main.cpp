@@ -28,27 +28,27 @@ public:
 // ---------------------------------------------------------
 // 2. 하이브리드 StringId 구조체
 // ---------------------------------------------------------
-struct StringId {
+struct HashedString {
     size_t hash_value;
     const std::string_view str_ptr; // 문자열 원본을 가리키는 포인터
 
     // A. 컴파일 타임 생성자 (상수 문자열 리터럴 전용)
     template <size_t N>
-    consteval StringId(const char(&str)[N])
+    consteval HashedString(const char(&str)[N])
         : hash_value(fnv1a_hash(str, N - 1))
         , str_ptr(str) {} // 데이터 영역(.rdata)의 리터럴 주소를 그대로 가리킴
 
     // B. 런타임 생성자 (동적 문자열 전용)
-    explicit StringId(const std::string& str)
+    explicit HashedString(const std::string& str)
         : hash_value(fnv1a_hash_runtime(str.c_str(), str.length()))
         , str_ptr(StringPool::intern(str)) {} // 풀에 저장하고 그 주소를 가리킴
 
     // C. 비교 연산자 (Map 내부 탐색용)
-    bool operator==(const StringId& other) const {
+    bool operator==(const HashedString& other) const {
         // 1차: 해시값 비교 (엄청나게 빠름)
         if (hash_value != other.hash_value) return false;
         // 2차: 포인터가 같으면 무조건 같은 문자열
-        if (str_ptr == other.str_ptr) return true;
+        if (str_ptr.data() == other.str_ptr.data()) return true;
         // 3차: 극히 희박한 해시 충돌 방지를 위한 최후의 문자열 비교
         return str_ptr == other.str_ptr;
     }
@@ -79,8 +79,8 @@ private:
 // 3. std::unordered_map 지원을 위한 std::hash 특수화
 // ---------------------------------------------------------
 template<>
-struct std::hash<StringId> {
-    size_t operator()(const StringId& id) const {
+struct std::hash<HashedString> {
+    size_t operator()(const HashedString& id) const {
         return id.hash_value; // 이미 계산된 해시를 그대로 반환 (O(1))
     }
 };
@@ -88,7 +88,7 @@ struct std::hash<StringId> {
 int main()
 {
 
-    std::unordered_map<StringId, int> myMap;
+    std::unordered_map<HashedString, int> myMap;
 
     myMap["Test"] = 3;
 
@@ -96,7 +96,7 @@ int main()
 
     int t = myMap["Test"];
 
-    int tt = myMap[StringId(tst)];
+    int tt = myMap[HashedString(tst)];
 
 
     return 0;
