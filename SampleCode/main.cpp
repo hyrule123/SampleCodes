@@ -1,103 +1,106 @@
 ﻿#include <iostream>
-
 #include <string>
 #include <string_view>
-#include <cstdint>
-
-#include <iostream>
 #include <unordered_map>
-#include <unordered_set>
 
-// ---------------------------------------------------------
-// 1. 런타임 문자열 저장소 (String Pool)
-// ---------------------------------------------------------
-class StringPool {
-public:
-    static const std::string_view intern(const std::string& str) {
-        // 싱글톤 패턴의 전역 문자열 풀
-        static std::unordered_set<std::string> pool;
-
-        // set에 문자열을 삽입. 이미 존재하면 기존 것을 반환
-        auto it = pool.insert(str).first;
-
-        // C++ 표준 보장: unordered_set 내부의 요소는 삭제되지 않는 한 포인터가 무효화되지 않음
-        return std::string_view(*it);
-    }
-};
-
-// ---------------------------------------------------------
-// 2. 하이브리드 StringId 구조체
-// ---------------------------------------------------------
-struct HashedString {
+// 1. 컴파일 타임/런타임 하이브리드 키 (수정됨)
+struct PrehashedKey {
+    std::string_view str;
     size_t hash_value;
-    const std::string_view str_ptr; // 문자열 원본을 가리키는 포인터
 
-    // A. 컴파일 타임 생성자 (상수 문자열 리터럴 전용)
+    // A. 컴파일 타임 리터럴 전용 (배열 참조가 Exact Match라 리터럴 입력 시 무조건 이것이 선택됨)
     template <size_t N>
-    consteval HashedString(const char(&str)[N])
-        : hash_value(fnv1a_hash(str, N - 1))
-        , str_ptr(str) {} // 데이터 영역(.rdata)의 리터럴 주소를 그대로 가리킴
+    consteval PrehashedKey(const char(&s)[N])
+        : str(s, N - 1), hash_value(hash_str(std::string_view(s, N - 1))) {}
 
-    // B. 런타임 생성자 (동적 문자열 전용)
-    explicit HashedString(const std::string& str)
-        : hash_value(fnv1a_hash_runtime(str.c_str(), str.length()))
-        , str_ptr(StringPool::intern(str)) {} // 풀에 저장하고 그 주소를 가리킴
+	PrehashedKey(const std::string_view s)
+		: str(s), hash_value(hash_str(s)) {}
 
-    // C. 비교 연산자 (Map 내부 탐색용)
-    bool operator==(const HashedString& other) const {
-        // 1차: 해시값 비교 (엄청나게 빠름)
-        if (hash_value != other.hash_value) return false;
-        // 2차: 포인터가 같으면 무조건 같은 문자열
-        if (str_ptr.data() == other.str_ptr.data()) return true;
-        // 3차: 극히 희박한 해시 충돌 방지를 위한 최후의 문자열 비교
-        return str_ptr == other.str_ptr;
+    static constexpr size_t hash_str(std::string_view s) {
+        size_t hash = 14695981039346656037ULL;
+        for (char c : s) {
+            hash ^= static_cast<size_t>(c);
+            hash *= 1099511628211ULL;
+        }
+        return hash;
     }
+};
 
+// ---------------------------------------------------------
+// 2. 투명한(Transparent) 해시 펑터 (모호성 완벽 제거 버전)
+// ---------------------------------------------------------
+
+struct TransparentHash {
+    using is_transparent = void;
+
+    // std::string 정확한 매칭 (변환 없이 바로 해싱)
+    size_t operator()(const std::string& s) const { return PrehashedKey::hash_str(s); }
+
+    // 기존 매칭들
+    size_t operator()(std::string_view s) const { return PrehashedKey::hash_str(s); }
+    size_t operator()(const PrehashedKey& pk) const { return pk.hash_value; }
+};
+
+struct TransparentEqual {
+    using is_transparent = void;
+
+    // 2. std::string_view 그룹
+    bool operator()(std::string_view lhs, std::string_view rhs) const { return lhs == rhs; }
+    bool operator()(std::string_view lhs, const PrehashedKey& rhs) const { return lhs == rhs.str; }
+    bool operator()(const PrehashedKey& lhs, std::string_view rhs) const { return lhs.str == rhs; }
+
+    // 3. PrehashedKey 전용 그룹
+    bool operator()(const PrehashedKey& lhs, const PrehashedKey& rhs) const {
+        return lhs.hash_value == rhs.hash_value && lhs.str == rhs.str;
+    }
+};
+
+// 3. 완전히 정리된 래퍼 컨테이너 (코드가 절반으로 줄었습니다!)
+template <typename ValueType>
+class HybridStringMap {
 private:
-    // 컴파일 타임 해시 함수
-    static consteval size_t fnv1a_hash(const char* str, size_t length) {
-        size_t hash = 14695981039346656037ULL;
-        for (size_t i = 0; i < length; ++i) {
-            hash ^= static_cast<size_t>(str[i]);
-            hash *= 1099511628211ULL;
+    using MapType = std::unordered_map<std::string, ValueType, TransparentHash, TransparentEqual>;
+    MapType map_;
+
+public:
+    // [단일 operator[]] 
+    // 리터럴을 넣으면 컴파일 타임 해싱, std::string을 넣으면 런타임 해싱이 자동으로 분기됩니다.
+    ValueType& operator[](const PrehashedKey& key) {
+        auto it = map_.find(key);
+        if (it != map_.end()) {
+            return it->second; // 이미 있으면 즉시 반환 (비용 0)
         }
-        return hash;
+
+        // 못 찾았을 때만 key.str(string_view)를 이용해 런타임에 메모리 할당 후 삽입
+        return map_[std::string(key.str)];
     }
 
-    // 런타임 해시 함수 (로직은 동일하나 consteval 제약이 없음)
-    static size_t fnv1a_hash_runtime(const char* str, size_t length) {
-        size_t hash = 14695981039346656037ULL;
-        for (size_t i = 0; i < length; ++i) {
-            hash ^= static_cast<size_t>(str[i]);
-            hash *= 1099511628211ULL;
-        }
-        return hash;
+    // [단일 find]
+    ValueType* find(const PrehashedKey& key) {
+        auto it = map_.find(key);
+        return it != map_.end() ? &it->second : nullptr;
     }
+
+    void clear() { map_.clear(); }
+    size_t size() const { return map_.size(); }
 };
 
-// ---------------------------------------------------------
-// 3. std::unordered_map 지원을 위한 std::hash 특수화
-// ---------------------------------------------------------
-template<>
-struct std::hash<HashedString> {
-    size_t operator()(const HashedString& id) const {
-        return id.hash_value; // 이미 계산된 해시를 그대로 반환 (O(1))
+// 4. 테스트 
+int main() {
+    HybridStringMap<int> GameData;
+
+    // ⭕️ 완벽하게 consteval로 작동합니다! (함수 외부에서 변환되므로 에러 없음)
+    GameData["PlayerHp"] = 100;
+
+	int t = GameData["PlayerHp"]; // consteval 탐색
+
+    std::string dynamicKey = "MonsterHp";
+    // ⭕️ 런타임 해싱으로 자연스럽게 작동합니다!
+    GameData[std::string_view(dynamicKey)] = 200;
+
+    if (int* hp = GameData.find("PlayerHp")) { // consteval 탐색
+        std::cout << "Player HP: " << *hp << "\n";
     }
-};
-
-int main()
-{
-
-    std::unordered_map<HashedString, int> myMap;
-
-    myMap["Test"] = 3;
-
-    std::string tst = "Test";
-
-    int t = myMap["Test"];
-
-    int tt = myMap[HashedString(tst)];
-
 
     return 0;
 }
