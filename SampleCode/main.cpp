@@ -3,121 +3,92 @@
 #include <string_view>
 #include <unordered_map>
 
-// 1. 컴파일 타임/런타임 하이브리드 키 (수정됨)
-struct PreHashedString {
-    std::string_view str;
-    size_t hash_value;
-
-    // A. 컴파일 타임 리터럴 전용 (배열 참조가 Exact Match라 리터럴 입력 시 무조건 이것이 선택됨)
-    template <size_t N>
-    consteval PreHashedString(const char(&s)[N])
-        : str(s, N - 1), hash_value(hash_str(std::string_view(s, N - 1))) {}
-
-	PreHashedString(const std::string_view s)
-		: str(s), hash_value(hash_str(s)) {}
-
-    PreHashedString(const std::string& s)
-		: str(s), hash_value(hash_str(s)) {}
-
-    static constexpr size_t hash_str(std::string_view s) {
-        size_t hash = 14695981039346656037ULL;
-        for (char c : s) {
-            hash ^= static_cast<size_t>(c);
-            hash *= 1099511628211ULL;
-        }
-        return hash;
+static constexpr size_t hash_str_fnv1a(const std::string_view s) {
+    size_t hash = 14695981039346656037ULL;
+    for (char c : s) {
+        hash ^= static_cast<size_t>(c);
+        hash *= 1099511628211ULL;
     }
-};
+    return hash;
+}
 
-struct PreHashedStringRuntime {
-	std::string str;
-	size_t hash_value;
-	PreHashedStringRuntime(const std::string& s)
-		: str(s), hash_value(PreHashedString::hash_str(s)) {}
-};
-
-// ---------------------------------------------------------
-// 2. 투명한(Transparent) 해시 펑터 (모호성 완벽 제거 버전)
-// ---------------------------------------------------------
-
-struct TransparentHash {
-    using is_transparent = void;
-
-    // std::string 정확한 매칭 (변환 없이 바로 해싱)
-    size_t operator()(const std::string& s) const { return PreHashedString::hash_str(s); }
-
-    // 기존 매칭들
-    size_t operator()(std::string_view s) const { return PreHashedString::hash_str(s); }
-    size_t operator()(const PreHashedString& pk) const { return pk.hash_value; }
-};
-
-struct TransparentEqual {
-    using is_transparent = void;
-
-	// 1. std::string 그룹
-    bool operator()(const std::string& lhs, const std::string& rhs) const { return lhs == rhs; }
-    bool operator()(const std::string& lhs, const PreHashedString& rhs) const { return lhs == rhs.str; }
-    bool operator()(const PreHashedString& lhs, const std::string& rhs) const { return lhs.str == rhs; }
-
-    // 2. std::string_view 그룹
-    bool operator()(std::string_view lhs, std::string_view rhs) const { return lhs == rhs; }
-    bool operator()(std::string_view lhs, const PreHashedString& rhs) const { return lhs == rhs.str; }
-    bool operator()(const PreHashedString& lhs, std::string_view rhs) const { return lhs.str == rhs; }
-
-    // 3. PreHashedString 전용 그룹
-    bool operator()(const PreHashedString& lhs, const PreHashedString& rhs) const {
-        return lhs.hash_value == rhs.hash_value && lhs.str == rhs.str;
-    }
-};
-
-// 3. 완전히 정리된 래퍼 컨테이너 (코드가 절반으로 줄었습니다!)
-template <typename ValueType>
-class HybridStringMap {
-private:
-    using MapType = std::unordered_map<std::string, ValueType, TransparentHash, TransparentEqual>;
-    MapType map_;
-
+// HashedStringView 구조체, constexpr
+struct HashedStringView {
 public:
-    // [단일 operator[]] 
-    // 리터럴을 넣으면 컴파일 타임 해싱, std::string을 넣으면 런타임 해싱이 자동으로 분기됩니다.
-    ValueType& operator[](const PreHashedString& key) {
-        auto it = map_.find(key);
-        if (it != map_.end()) {
-            return it->second; // 이미 있으면 즉시 반환 (비용 0)
-        }
+	const size_t hash;
+	const std::string_view str;
+	constexpr HashedStringView(const std::string_view s) : hash(hash_str_fnv1a(s)), str(s) {}
 
-        // 못 찾았을 때만 key.str(string_view)를 이용해 런타임에 메모리 할당 후 삽입
-        return map_[std::string(key.str)];
-    }
-
-    // [단일 find]
-    ValueType* find(const PreHashedString& key) {
-        auto it = map_.find(key);
-        return it != map_.end() ? &it->second : nullptr;
-    }
-
-    void clear() { map_.clear(); }
-    size_t size() const { return map_.size(); }
+private:
+	//HashedString용 생성자, 해시값을 직접 넣어주는 용도
+	friend struct HashedString;
+	explicit HashedStringView(const std::string_view s, size_t h) : hash(h), str(s) {}
+	HashedStringView() = delete;
 };
+
+// ""_hash 리터럴 연산자, consteval
+consteval HashedStringView operator "" _hash(const char* s, size_t) {
+	return HashedStringView(s);
+}
+
+// HashedString 구조체, 해시값과 문자열을 함께 저장(런타임용)
+struct HashedString {
+    HashedString(const std::string_view s) : str(s), value(str) {}
+
+	//Hashed String View가 들어오면 문자열만 복사하고 해시값은 그대로 사용
+	HashedString(const HashedStringView& sv) : str(sv.str), value(str, sv.hash) {}
+	HashedString() = delete;
+
+	// 내부의 HashedStringView를 반환하는 연산자
+	operator const HashedStringView&() const { return value; }
+
+    const std::string str;
+	const HashedStringView value;
+};
+
+struct StringHasher {
+	using is_transparent = void;
+
+	size_t operator()(const std::string_view s) const noexcept {
+		return hash_str_fnv1a(s);
+	}
+
+	size_t operator()(const std::string& s) const noexcept {
+		return hash_str_fnv1a(s);
+	}
+
+	size_t operator()(const HashedStringView& s) const noexcept {
+		return s.hash;
+	}
+};
+
+struct StringEqual {
+	using is_transparent = void;
+
+	bool operator()(const std::string_view lhs, const std::string_view rhs) const { return lhs == rhs; }
+
+	bool operator()(const std::string_view lhs, HashedStringView rhs) const { return lhs == rhs.str; }
+	bool operator()(HashedStringView lhs, const std::string_view rhs) const { return lhs.str == rhs; }
+
+	bool operator()(HashedStringView lhs, HashedStringView rhs) const {
+		return lhs.hash == rhs.hash && lhs.str == rhs.str;
+	}
+};
+
+std::unordered_map<std::string, int, StringHasher, StringEqual> my_map;
 
 // 4. 테스트 
 int main() {
-    HybridStringMap<int> GameData;
 
-	PreHashedString key = "PlayerHp";
+	HashedStringView hsv = "test"_hash;
+	HashedString hs = hsv;
 
-    // ⭕️ 완벽하게 consteval로 작동합니다! (함수 외부에서 변환되므로 에러 없음)
-    GameData["PlayerHp"] = 100;
+	my_map["test"] = 42;
 
-	int t = GameData["PlayerHp"]; // consteval 탐색
+	auto it1 = my_map.find("test"_hash);
 
-    std::string dynamicKey = "MonsterHp";
-    // ⭕️ 런타임 해싱으로 자연스럽게 작동합니다!
-    GameData[dynamicKey] = 200;
-
-    if (int* hp = GameData.find("PlayerHp")) { // consteval 탐색
-        std::cout << "Player HP: " << *hp << "\n";
-    }
+	auto it2 = my_map.find(hs);
+	auto it3 = my_map.find(hsv);
 
     return 0;
 }
